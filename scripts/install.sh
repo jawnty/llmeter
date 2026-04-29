@@ -9,9 +9,10 @@ PORT="${TOKMON_PORT:-4001}"
 LOG_DIR="${TOKMON_LOG_DIR:-$HOME/.openclaw/logs}"
 PLIST="$HOME/Library/LaunchAgents/com.tokmon.monitor.plist"
 DOMAIN="gui/$(id -u)"
+PYTHON="${TOKMON_PYTHON:-python3}"
 
 echo "[tokmon] setting up virtualenv at $DIR/.venv"
-python3 -m venv .venv
+"$PYTHON" -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip >/dev/null
 pip install -r requirements.txt
@@ -55,6 +56,14 @@ cat > "$PLIST" <<PLIST
 PLIST
 
 launchctl bootout "$DOMAIN" "$PLIST" 2>/dev/null || true
+if command -v lsof >/dev/null 2>&1; then
+  while read -r PID; do
+    [ -z "$PID" ] && continue
+    if ps -p "$PID" -o command= | grep -q -- "-m tokmon"; then
+      kill "$PID" 2>/dev/null || true
+    fi
+  done < <(lsof -tiTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)
+fi
 launchctl bootstrap "$DOMAIN" "$PLIST"
 launchctl kickstart -k "$DOMAIN/com.tokmon.monitor" 2>/dev/null || true
 

@@ -1,0 +1,32 @@
+{
+  "name": "tokmon",
+  "version": "0.1.0",
+  "description": "Local token usage monitor for Claude Code and Codex",
+  "license": "MIT",
+  "bin": {
+    "tokmon": "bin/tokmon.js"
+  },
+  "files": [
+    "bin",
+    "docs",
+    "launchd",
+    "scripts",
+    "tokmon",
+    "README.md",
+    "requirements.txt"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "prepack": "find tokmon -name __pycache__ -type d -prune -exec rm -rf {} +",
+    "test": "node bin/tokmon.js --help"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "claude-code",
+    "codex",
+    "litellm"
+  ]
+}

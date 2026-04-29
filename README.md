@@ -28,9 +28,7 @@ LiteLLM, while keeping the dashboard and storage model local.
 Requirements: macOS, Python 3.11 or newer, and either Claude Code or Codex.
 
 ```bash
-git clone <repo-url>
-cd tokmon
-bash scripts/install.sh
+npx tokmon install
 ```
 
 Then open:
@@ -41,10 +39,12 @@ http://127.0.0.1:4001
 
 That is it. The installer:
 
-- creates `.venv`
+- copies tokmon into `~/.tokmon/app`
+- creates `~/.tokmon/app/.venv`
 - installs pinned Python dependencies from `requirements.txt`
-- writes a launchd service for your actual checkout path
+- writes a launchd service for the installed app path
 - starts tokmon now and on future logins
+- opens the dashboard
 
 Logs are written to:
 
@@ -55,7 +55,14 @@ Logs are written to:
 The SQLite database is written to:
 
 ```text
-data/tokmon.db
+~/.tokmon/app/data/tokmon.db
+```
+
+If you are trying the current GitHub version before the npm package is
+published, use:
+
+```bash
+npx github:jawnty/tokmon install
 ```
 
 ## Using tokmon
@@ -90,20 +97,32 @@ unstuck without leaving the app.
 Stop:
 
 ```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist
+npx tokmon stop
 ```
 
 Start:
 
 ```bash
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist
+npx tokmon start
 ```
 
 Restart:
 
 ```bash
-launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist 2>/dev/null || true
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist
+npx tokmon stop
+npx tokmon start
+```
+
+Check status:
+
+```bash
+npx tokmon status
+```
+
+Remove the installed app:
+
+```bash
+npx tokmon uninstall
 ```
 
 ## Configuration
@@ -149,6 +168,8 @@ automatically safe.
 Set up dependencies:
 
 ```bash
+git clone https://github.com/jawnty/tokmon.git
+cd tokmon
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
@@ -164,6 +185,13 @@ Run tests:
 
 ```bash
 pytest
+```
+
+Test the npm wrapper from the checkout:
+
+```bash
+node bin/tokmon.js --help
+npm pack --dry-run
 ```
 
 ## Data Model

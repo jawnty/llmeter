@@ -19,10 +19,8 @@
   <p>tokmon is a local token-usage dashboard for Claude Code and Codex. It reads the JSONL logs those tools already write, stores token counts in SQLite, and shows a live dashboard on localhost.</p>
 
   <h2>Install</h2>
-  <pre><code>git clone &lt;repo-url&gt;
-cd tokmon
-bash scripts/install.sh</code></pre>
-  <p>Then open <a href="/">the dashboard</a>. The installer creates a Python virtualenv, installs pinned dependencies, and starts a launchd service on macOS.</p>
+  <pre><code>npx tokmon install</code></pre>
+  <p>Then open <a href="/">the dashboard</a>. The installer copies tokmon into <code>~/.tokmon/app</code>, creates a Python virtualenv, installs pinned dependencies, starts a launchd service on macOS, and opens the dashboard.</p>
 
   <h2>What Works Today</h2>
   <ul>
@@ -35,8 +33,9 @@ bash scripts/install.sh</code></pre>
   <p>tokmon is the dashboard/storage layer above local LLM tooling. This v1 does not proxy Claude Code or Codex traffic through LiteLLM; it reads local logs. For tools that need a proxy later, the expected expansion path is a LiteLLM-backed source with exact pinned versions. LiteLLM has had security-sensitive issues, so watch upstream advisories, do not expose proxies publicly, and run it at your own risk.</p>
 
   <h2>Stop Or Restart</h2>
-  <pre><code>launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.tokmon.monitor.plist</code></pre>
+  <pre><code>npx tokmon stop
+npx tokmon start
+npx tokmon status</code></pre>
 
   <h2>Settings</h2>
   <p>The defaults should work for most people. Advanced users can set <code>TOKMON_PORT</code>, <code>TOKMON_HOST</code>, <code>TOKMON_DB_PATH</code>, <code>TOKMON_CLAUDE_GLOB</code>, or <code>TOKMON_CODEX_GLOB</code>.</p>
