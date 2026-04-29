@@ -1,9 +1,9 @@
 import sqlite3
 import os
 import threading
+from . import config
 
 _LOCK = threading.Lock()
-DB_PATH = os.path.expanduser("~/projects/tokmon/data/tokmon.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS sessions (
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS file_offsets (
 
 
 def connect():
-    conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
+    conn = sqlite3.connect(config.db_path(), timeout=30, isolation_level=None)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.row_factory = sqlite3.Row
@@ -58,7 +58,7 @@ def connect():
 
 
 def init():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    os.makedirs(config.db_path().parent, exist_ok=True)
     with _LOCK, connect() as c:
         c.executescript(SCHEMA)
 

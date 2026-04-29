@@ -2,14 +2,10 @@
 
 import os
 import glob
-import asyncio
+from . import config
 from . import db
 from . import parser_claude
 from . import parser_codex
-
-
-CLAUDE_GLOB = os.path.expanduser("~/.claude/projects/**/*.jsonl")
-CODEX_GLOB = os.path.expanduser("~/.codex/sessions/**/*.jsonl")
 
 
 def _models_merge(existing: str, new: str) -> str:
@@ -92,8 +88,8 @@ def ingest_file(conn, path: str, source: str) -> int:
 
 def scan_all(conn):
     total_new = 0
-    for path in glob.glob(CLAUDE_GLOB, recursive=True):
+    for path in glob.glob(config.claude_glob(), recursive=True):
         total_new += ingest_file(conn, path, "claude")
-    for path in glob.glob(CODEX_GLOB, recursive=True):
+    for path in glob.glob(config.codex_glob(), recursive=True):
         total_new += ingest_file(conn, path, "codex")
     return total_new

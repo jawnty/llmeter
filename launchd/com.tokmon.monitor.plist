@@ -6,12 +6,12 @@
   <string>com.tokmon.monitor</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/john/projects/tokmon/.venv/bin/python</string>
+    <string>/path/to/tokmon/.venv/bin/python</string>
     <string>-m</string>
     <string>tokmon</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/john/projects/tokmon</string>
+  <string>/path/to/tokmon</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PYTHONUNBUFFERED</key>

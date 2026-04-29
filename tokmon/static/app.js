@@ -1,5 +1,12 @@
 const fmt = (n) => (n == null ? "—" : n.toLocaleString());
 const fmtCost = (n) => (n == null ? "—" : "$" + (n).toFixed(4));
+const esc = (value) => String(value ?? "").replace(/[<>&"']/g, (c) => ({
+  "<": "&lt;",
+  ">": "&gt;",
+  "&": "&amp;",
+  "\"": "&quot;",
+  "'": "&#39;",
+}[c]));
 const fmtTime = (iso) => {
   if (!iso) return "";
   const d = new Date(iso);
@@ -43,22 +50,26 @@ async function loadSessions() {
     return;
   }
   tbody.innerHTML = d.sessions.map((s) => {
-    const prompt = s.opening_prompt ? s.opening_prompt.replace(/\s+/g, " ").slice(0, 200) : `<span class="muted">(no opening prompt captured)</span>`;
+    const prompt = s.opening_prompt ? esc(s.opening_prompt.replace(/\s+/g, " ").slice(0, 200)) : `<span class="muted">(no opening prompt captured)</span>`;
     const side = s.is_sidechain ? `<span class="badge side">subagent</span>` : "";
     return `<tr data-id="${s.id}">
       <td>${fmtTime(s.first_ts)}</td>
-      <td class="src"><span class="badge ${s.source}">${s.source}</span>${side}</td>
-      <td>${s.project || "<span class='muted'>—</span>"}</td>
-      <td class="prompt" title="${(s.opening_prompt||'').replace(/"/g,'&quot;')}">${prompt}</td>
+      <td class="src"><span class="badge ${esc(s.source)}">${esc(s.source)}</span>${side}</td>
+      <td>${s.project ? esc(s.project) : "<span class='muted'>—</span>"}</td>
+      <td class="prompt" title="${esc(s.opening_prompt || "")}">${prompt}</td>
       <td class="num">${fmt(s.total_tokens)}</td>
       <td class="num">${fmt(s.turns)}</td>
       <td class="num">${fmtCost(s.cost_usd)}</td>
-      <td><span class="muted">${(s.models || "").split(",").filter(Boolean).join(", ") || "—"}</span></td>
+      <td><span class="muted">${esc((s.models || "").split(",").filter(Boolean).join(", ") || "—")}</span></td>
     </tr>`;
   }).join("");
   tbody.querySelectorAll("tr").forEach((tr) => {
     tr.addEventListener("click", () => showDetail(tr.dataset.id));
   });
+  if (location.hash === "#first-session" && !window.__tokmonOpenedFirstSession) {
+    window.__tokmonOpenedFirstSession = true;
+    showDetail(d.sessions[0].id);
+  }
 }
 
 async function showDetail(sid) {
@@ -68,17 +79,17 @@ async function showDetail(sid) {
   const turns = d.turns.map((t) => `
     <div class="turn-row">
       <span>${fmtTime(t.ts)}</span>
-      <span class="muted">${t.model || ""}</span>
+      <span class="muted">${esc(t.model || "")}</span>
       <span></span>
       <span class="num">in ${fmt(t.input_tokens)}</span>
       <span class="num">out ${fmt(t.output_tokens)}</span>
       <span class="num">${fmt(t.total_tokens)}</span>
     </div>`).join("");
   document.getElementById("detail-body").innerHTML = `
-    <h3 style="margin-top:0">${s.project || "(unknown project)"} <span class="badge ${s.source}">${s.source}</span></h3>
-    <div class="muted" style="font-size:12px">${s.cwd || ""}</div>
-    <div class="muted" style="font-size:12px">${s.id}</div>
-    <div class="detail-prompt">${(s.opening_prompt || "(no opening prompt captured)").replace(/[<>&]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))}</div>
+    <h3 style="margin-top:0">${esc(s.project || "(unknown project)")} <span class="badge ${esc(s.source)}">${esc(s.source)}</span></h3>
+    <div class="muted" style="font-size:12px">${esc(s.cwd || "")}</div>
+    <div class="muted" style="font-size:12px">${esc(s.id)}</div>
+    <div class="detail-prompt">${esc(s.opening_prompt || "(no opening prompt captured)")}</div>
     <div class="turn-row" style="font-weight:600">
       <span class="h">Time</span><span class="h">Model</span><span></span>
       <span class="h num">Input</span><span class="h num">Output</span><span class="h num">Total</span>

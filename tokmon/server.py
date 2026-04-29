@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from . import db
 from . import ingest
 
-app = FastAPI(title="tokmon")
+app = FastAPI(title="tokmon", docs_url="/api/docs", redoc_url=None)
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -27,6 +27,11 @@ def _today_local() -> str:
 @app.get("/", response_class=HTMLResponse)
 def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.get("/docs", response_class=HTMLResponse)
+def docs():
+    return FileResponse(os.path.join(STATIC_DIR, "docs.html"))
 
 
 @app.get("/api/today")
