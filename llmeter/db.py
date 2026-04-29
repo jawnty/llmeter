@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import threading
+from contextlib import contextmanager
 from . import config
 
 _LOCK = threading.Lock()
@@ -49,12 +50,16 @@ CREATE TABLE IF NOT EXISTS file_offsets (
 """
 
 
+@contextmanager
 def connect():
     conn = sqlite3.connect(config.db_path(), timeout=30, isolation_level=None)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def init():

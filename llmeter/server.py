@@ -29,11 +29,6 @@ def index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 
-@app.get("/docs", response_class=HTMLResponse)
-def docs():
-    return FileResponse(os.path.join(STATIC_DIR, "docs.html"))
-
-
 @app.get("/api/today")
 def api_today():
     day = _today_local()

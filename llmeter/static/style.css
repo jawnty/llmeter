@@ -39,7 +39,6 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: 
 #chart { width: 100%; height: 180px; background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 10px; }
 #chart svg { width: 100%; height: 100%; }
 #chart rect.bar { fill: #1f6feb; }
-#chart rect.bar:hover { fill: #58a6ff; }
 #chart text { fill: #8b949e; font-size: 10px; }
 
 table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #21262d; border-radius: 8px; overflow: hidden; }
@@ -66,26 +65,3 @@ dialog .close { float: right; background: none; border: 1px solid #30363d; color
 .turn-row .h { color: #8b949e; font-size: 10px; text-transform: uppercase; }
 
 .muted { color: #6e7681; }
-
-.docs-page {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 28px;
-}
-.docs-page h1 { font-size: 28px; margin: 0 0 8px; }
-.docs-page h2 { margin-top: 28px; }
-.docs-page p, .docs-page li { color: #c9d1d9; }
-.docs-page code {
-  background: #161b22;
-  border: 1px solid #21262d;
-  border-radius: 4px;
-  padding: 1px 4px;
-}
-.docs-page pre {
-  background: #161b22;
-  border: 1px solid #21262d;
-  border-radius: 8px;
-  overflow-x: auto;
-  padding: 12px;
-}
-.docs-page a { color: #58a6ff; }
