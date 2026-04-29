@@ -1,0 +1,4 @@
+# Menu bar app build/runtime deps. Kept separate from requirements.txt so
+# dashboard-only users do not need pyobjc / py2app.
+rumps==0.4.0
+py2app==0.28.8
