@@ -80,6 +80,53 @@ The cost number is a reference estimate only. It uses approximate published API
 prices so you can spot expensive sessions. It is not your real bill, especially
 if you use subscription products.
 
+## Menu Bar App (macOS)
+
+llmeter ships a Mac status bar app as a second, additive surface. It shows
+today's totals at a glance without opening a browser. The dashboard is the
+deep view; the menu bar is the always-on glance view.
+
+What it shows:
+
+- compact token count in the menu bar (e.g. `⚡ 1.2M`)
+- today's total tokens, Claude vs Codex split, reference cost
+- last session summary (project · turns · tokens)
+- "Open dashboard" → `http://127.0.0.1:4001`
+- "Refresh now", "Quit"
+
+It is a **read-only client of the same SQLite database** the dashboard
+writes to. Ingest stays in the dashboard's launchd service. The menu bar
+app polls the database every 5 seconds (override with
+`LLMETER_MENUBAR_REFRESH_SEC`).
+
+Build and run:
+
+```bash
+cd /path/to/llmeter
+python3 -m venv .venv-menubar
+. .venv-menubar/bin/activate
+pip install -r requirements.txt -r requirements-menubar.txt
+
+# fast iteration (alias mode, runs from source):
+python setup_menubar.py py2app -A
+open dist/Llmeter.app
+
+# standalone bundle:
+python setup_menubar.py py2app
+```
+
+Drag `dist/Llmeter.app` to `/Applications`. To launch on login: System
+Settings → General → Login Items → add `Llmeter.app`. The dashboard's
+launchd service is unrelated and unaffected.
+
+You can also run the menu bar directly from a venv without bundling:
+
+```bash
+python -m llmeter.menubar
+```
+
+See `SPEC.md` for the full design rationale.
+
 ## Help Page
 
 The running app includes a short Help page linked from the top right of the
