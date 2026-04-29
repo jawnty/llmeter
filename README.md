@@ -82,11 +82,11 @@ if you use subscription products.
 
 ## Menu Bar App (macOS)
 
-llmeter ships a Mac status bar app as a second, additive surface. It shows
-today's totals at a glance without opening a browser. The dashboard is the
-deep view; the menu bar is the always-on glance view.
+`npx llmeter install` now installs **both** the dashboard and the menu bar
+app. There is nothing extra to do — after install you should see a `⚡` icon
+in the macOS menu bar and the dashboard at `http://127.0.0.1:4001`.
 
-What it shows:
+The menu bar app shows:
 
 - compact token count in the menu bar (e.g. `⚡ 1.2M`)
 - today's total tokens, Claude vs Codex split, reference cost
@@ -99,7 +99,33 @@ writes to. Ingest stays in the dashboard's launchd service. The menu bar
 app polls the database every 5 seconds (override with
 `LLMETER_MENUBAR_REFRESH_SEC`).
 
-Build and run:
+The installer:
+
+- creates a separate venv at `~/.llmeter/menubar-venv` (so pyobjc/py2app
+  don't bloat the dashboard env)
+- installs `requirements-menubar.txt` (rumps + py2app)
+- builds `Llmeter.app` via `py2app -A` (alias mode — fast, references the
+  installed source under `~/.llmeter/app`)
+- copies it to `/Applications/Llmeter.app`
+- registers it as a Login Item so it starts on every login
+- launches it now
+
+Install flags:
+
+- `--no-menubar` — install only the dashboard.
+- `--menubar-only` — install only the menu bar app. The dashboard service
+  currently owns ingest, so without it the menu bar will show stale data.
+  Tradeoff documented in `SPEC.md`.
+
+`npx llmeter uninstall` removes the menu bar app, Login Item, menubar venv,
+dashboard service, and `~/.llmeter` together.
+
+`npx llmeter status` reports both the dashboard service and the menu bar app.
+
+### Development (manual)
+
+If you are hacking on the menu bar code without going through the npm
+installer:
 
 ```bash
 cd /path/to/llmeter
@@ -107,22 +133,15 @@ python3 -m venv .venv-menubar
 . .venv-menubar/bin/activate
 pip install -r requirements.txt -r requirements-menubar.txt
 
-# fast iteration (alias mode, runs from source):
+# run from source, no bundle:
+python -m llmeter.menubar
+
+# fast iteration as an .app:
 python setup_menubar.py py2app -A
 open dist/Llmeter.app
 
 # standalone bundle:
 python setup_menubar.py py2app
-```
-
-Drag `dist/Llmeter.app` to `/Applications`. To launch on login: System
-Settings → General → Login Items → add `Llmeter.app`. The dashboard's
-launchd service is unrelated and unaffected.
-
-You can also run the menu bar directly from a venv without bundling:
-
-```bash
-python -m llmeter.menubar
 ```
 
 See `SPEC.md` for the full design rationale.

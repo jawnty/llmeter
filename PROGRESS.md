@@ -72,3 +72,89 @@ Open follow-ups:
 - npm installer changes to optionally install the .app — not in this branch.
 
 Nothing is deployed; your running `~/.llmeter` install is untouched.
+
+---
+
+## 2026-04-29 — Round 2: dead-simple npm install
+
+John asked for the npm install path to also install the menu bar app — Mac
+only is fine, dead simple. Done.
+
+Changes:
+
+- `bin/llmeter.js`
+  - new flags `--no-menubar`, `--menubar-only` (mutually exclusive); existing
+    `--no-open` preserved.
+  - `install` now runs the dashboard install (unless `--menubar-only`) and
+    then `scripts/install_menubar.sh` (unless `--no-menubar`).
+  - `uninstall` now also runs `scripts/uninstall_menubar.sh` (quit app,
+    remove `/Applications/Llmeter.app`, remove Login Item, remove
+    `~/.llmeter/menubar-venv`) before removing `~/.llmeter/app`.
+  - `status` reports menu bar app installed/running.
+  - `start` / `stop` also start/stop the menu bar app.
+  - Updated `--help` to document the new flags + new behavior.
+- `scripts/install_menubar.sh` (new)
+  - Creates `~/.llmeter/menubar-venv` (separate from dashboard venv).
+  - Installs `requirements.txt` + `requirements-menubar.txt` into it.
+  - Builds `Llmeter.app` via `python setup_menubar.py py2app -A` (alias mode,
+    fast — references the source under `~/.llmeter/app`).
+  - Idempotently quits any running instance, removes any prior bundle, and
+    copies to `/Applications/Llmeter.app`.
+  - Idempotently removes prior Login Item by name and registers a new one
+    via `osascript`. If automation permission is missing, prints a clear
+    fallback message instead of failing.
+  - Launches the app via `open -a Llmeter`.
+- `scripts/uninstall_menubar.sh` (new)
+  - Quits the app, removes `/Applications/Llmeter.app`, removes the Login
+    Item, removes `~/.llmeter/menubar-venv`.
+- `requirements-menubar.txt` — pinned `setuptools<81` (py2app 0.28.8 still
+  imports `pkg_resources`, removed in setuptools 81).
+- `--menubar-only` decision: kept the flag but documented the tradeoff.
+  Implementing a true ingest-only entrypoint (`python -m llmeter.ingest_only`)
+  was non-trivial in the available time — ingest is currently invoked from
+  inside the FastAPI server lifecycle. Tradeoff is documented in `SPEC.md`
+  and the help text. v1 ships with `--menubar-only` skipping the dashboard
+  service but not setting up an alternative ingest path.
+
+Tested end-to-end on this Mac:
+
+1. Backed up `~/.llmeter` → `~/.llmeter.bak.20260429-164921`.
+2. Ran `node bin/llmeter.js install --no-open`. Result: dashboard reinstalled,
+   `Llmeter.app` built and copied to `/Applications`, app launched (verified
+   via `pgrep`).
+3. `node bin/llmeter.js status` → reported dashboard `running/loaded`,
+   menu bar app `installed and running`, dashboard HTTP 200.
+4. `curl http://127.0.0.1:4001/api/today` → 200.
+5. `node bin/llmeter.js uninstall`. Result: app process gone,
+   `/Applications/Llmeter.app` removed, `~/.llmeter/app` removed,
+   `~/.llmeter/menubar-venv` removed.
+6. Restored `~/.llmeter` from backup, re-bootstrapped the launchd service.
+   `launchctl print` shows `state = running`; HTTP 200 again.
+7. `pytest` — 11/11 green.
+
+What didn't work cleanly:
+
+- Login Item registration via `osascript` requires Automation permission for
+  the terminal/host process. On first run it may prompt or silently fail.
+  The installer now degrades gracefully: prints a one-line fallback telling
+  the user to either grant the permission or add the Login Item manually
+  via System Settings. Bundle install + launch are unaffected.
+
+How John can try it:
+
+```
+npx github:jawnty/llmeter#menubar-app install
+```
+
+That's the whole UX. Look for `⚡` in the menu bar; the dashboard opens
+automatically. To revert:
+
+```
+npx github:jawnty/llmeter#menubar-app uninstall
+```
+
+Open follow-ups (unchanged from round 1):
+
+- Standalone ingest entrypoint so `--menubar-only` actually ingests.
+- Cost / token threshold notifications.
+- Optional folding of dashboard into `Llmeter.app` (one process).

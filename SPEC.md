@@ -117,18 +117,51 @@ they currently still need the launchd service running for ingest. Standalone
 ingest in the menu bar app is a future option (`LLMETER_MENUBAR_INGEST=1`)
 but not v1.
 
-### Launching
+### Launching — npm installer is the canonical path
 
-- Build: `python setup_menubar.py py2app` from a project venv with
-  `rumps` and `py2app` installed.
-- Install: drag `dist/Llmeter.app` to `/Applications`.
-- Run on login: macOS → System Settings → General → Login Items, add
-  `Llmeter.app`. (The existing launchd service is unrelated and unaffected.)
+`npx llmeter install` installs both surfaces in a single command. For Mac
+users this is the only thing they should ever need to run.
 
-The existing launchd dashboard service is **kept**. Removing it would force
-all users onto the menu bar app and break anyone who relies on the dashboard
-URL or wants to view detail. Lower-risk default: keep the launchd service,
-add the menu bar as additive.
+The installer:
+
+1. Stages source at `~/.llmeter/app`.
+2. Builds the dashboard venv at `~/.llmeter/app/.venv` and writes the
+   launchd LaunchAgent `com.llmeter.monitor`.
+3. Builds a separate menu bar venv at `~/.llmeter/menubar-venv` (rumps +
+   py2app), kept separate so pyobjc/py2app don't bloat the dashboard env.
+4. Runs `python setup_menubar.py py2app -A` (alias mode — fast, references
+   the installed source) to produce `Llmeter.app`.
+5. Copies the bundle to `/Applications/Llmeter.app` (idempotent: removes
+   any prior bundle first).
+6. Registers it as a Login Item via `osascript`/System Events
+   (idempotent: removes any prior entry with the same name first).
+7. Launches the app and opens the dashboard.
+
+Install flags:
+
+- `--no-menubar` — install only the dashboard.
+- `--menubar-only` — install only the menu bar app. Ingest currently lives
+  inside the dashboard service, so without the dashboard the menu bar will
+  show stale data. Tradeoff is intentional: a standalone ingest entrypoint
+  (`python -m llmeter.ingest_only`) is in the open-questions list but not
+  v1; keeping a single ingest path avoids two writers competing for file
+  offsets.
+- `--no-open` — do not open the browser at the end.
+
+The dashboard launchd service is **kept** as the canonical ingest owner.
+Removing it would force a separate ingest mechanism just for the menu bar
+app. Additive integration is the lower-risk default.
+
+Manual / development build is preserved (see README "Development") for
+hacking without the npm flow:
+
+```
+python3 -m venv .venv-menubar
+. .venv-menubar/bin/activate
+pip install -r requirements.txt -r requirements-menubar.txt
+python -m llmeter.menubar          # run from source
+python setup_menubar.py py2app -A  # alias-mode .app
+```
 
 ### Configuration
 
