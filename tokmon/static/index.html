@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tokmon</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>tokmon</h1>
+  <div class="meta">
+    <span id="status" class="status">connecting…</span>
+    <span id="day"></span>
+  </div>
+</header>
+
+<section class="totals">
+  <div class="card"><div class="label">Today's tokens</div><div class="value" id="total-tokens">—</div><div class="sub" id="total-turns"></div></div>
+  <div class="card"><div class="label">Reference API cost*</div><div class="value" id="total-cost">—</div><div class="sub">*you pay subscription, not this</div></div>
+  <div class="card"><div class="label">Claude Code</div><div class="value" id="claude-tokens">—</div></div>
+  <div class="card"><div class="label">Codex</div><div class="value" id="codex-tokens">—</div></div>
+</section>
+
+<section class="chart-section">
+  <h2>Hourly today</h2>
+  <div id="chart"></div>
+</section>
+
+<section class="sessions-section">
+  <h2>Sessions today</h2>
+  <table id="sessions">
+    <thead>
+      <tr>
+        <th>Start</th><th>Src</th><th>Project</th><th>Opening prompt</th>
+        <th class="num">Tokens</th><th class="num">Turns</th><th class="num">Cost*</th><th>Models</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<dialog id="session-detail">
+  <button class="close" onclick="document.getElementById('session-detail').close()">close</button>
+  <div id="detail-body"></div>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
