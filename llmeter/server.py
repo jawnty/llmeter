@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from . import db
 from . import ingest
 
-app = FastAPI(title="tokmon", docs_url="/api/docs", redoc_url=None)
+app = FastAPI(title="llmeter", docs_url="/api/docs", redoc_url=None)
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -184,7 +184,7 @@ async def poll_loop(interval: float = 3.0):
             if new:
                 broadcast(f"new_turns:{new}")
         except Exception as e:
-            print(f"[tokmon] poll error: {e}", flush=True)
+            print(f"[llmeter] poll error: {e}", flush=True)
         await asyncio.sleep(interval)
 
 
@@ -194,5 +194,5 @@ async def _startup():
     # Initial backfill
     with db.connect() as c:
         added = ingest.scan_all(c)
-    print(f"[tokmon] backfill complete: {added} new turns", flush=True)
+    print(f"[llmeter] backfill complete: {added} new turns", flush=True)
     asyncio.create_task(poll_loop())

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>llmeter help</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1><a class="help-link" href="/">llmeter</a></h1>
+  <div class="meta">
+    <a class="help-link" href="/">Dashboard</a>
+    <a class="help-link" href="/api/docs">API</a>
+  </div>
+</header>
+
+<main class="docs-page">
+  <h1>Help</h1>
+  <p>llmeter is a local token-usage dashboard for Claude Code and Codex. It reads the JSONL logs those tools already write, stores token counts in SQLite, and shows a live dashboard on localhost.</p>
+
+  <h2>Install</h2>
+  <pre><code>npx llmeter install</code></pre>
+  <p>Then open <a href="/">the dashboard</a>. The installer copies llmeter into <code>~/.llmeter/app</code>, creates a Python virtualenv, installs pinned dependencies, starts a launchd service on macOS, and opens the dashboard.</p>
+
+  <h2>What Works Today</h2>
+  <ul>
+    <li>Claude Code logs from <code>~/.claude/projects/**/*.jsonl</code></li>
+    <li>Codex logs from <code>~/.codex/sessions/**/*.jsonl</code></li>
+    <li>Today totals, hourly bars, sessions, per-turn details, and live refreshes</li>
+  </ul>
+
+  <h2>LiteLLM And Security</h2>
+  <p>llmeter is the dashboard/storage layer above local LLM tooling. This v1 does not proxy Claude Code or Codex traffic through LiteLLM; it reads local logs. For tools that need a proxy later, the expected expansion path is a LiteLLM-backed source with exact pinned versions. LiteLLM has had security-sensitive issues, so watch upstream advisories, do not expose proxies publicly, and run it at your own risk.</p>
+
+  <h2>Stop Or Restart</h2>
+  <pre><code>npx llmeter stop
+npx llmeter start
+npx llmeter status</code></pre>
+
+  <h2>Settings</h2>
+  <p>The defaults should work for most people. Advanced users can set <code>LLMETER_PORT</code>, <code>LLMETER_HOST</code>, <code>LLMETER_DB_PATH</code>, <code>LLMETER_CLAUDE_GLOB</code>, or <code>LLMETER_CODEX_GLOB</code>.</p>
+</main>
+</body>
+</html>

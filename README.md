@@ -1,20 +1,20 @@
-# tokmon
+# llmeter
 
 Local live token-usage monitor for Claude Code and Codex.
 
-tokmon reads the JSONL session logs that Claude Code and Codex already write,
+llmeter reads the JSONL session logs that Claude Code and Codex already write,
 stores usage in SQLite, and serves a local dashboard at
 `http://127.0.0.1:4001`.
 
 It does not require API key changes, shell aliases, or wrapping your editor.
 
-![tokmon dashboard](docs/screenshots/dashboard.png)
+![llmeter dashboard](docs/screenshots/dashboard.png)
 
-![tokmon session detail](docs/screenshots/session-detail.png)
+![llmeter session detail](docs/screenshots/session-detail.png)
 
 ## What Works Today
 
-tokmon currently supports:
+llmeter currently supports:
 
 - Claude Code: `~/.claude/projects/**/*.jsonl`
 - Codex: `~/.codex/sessions/**/*.jsonl`
@@ -28,7 +28,7 @@ LiteLLM, while keeping the dashboard and storage model local.
 Requirements: macOS, Python 3.11 or newer, and either Claude Code or Codex.
 
 ```bash
-npx tokmon install
+npx llmeter install
 ```
 
 Then open:
@@ -39,33 +39,33 @@ http://127.0.0.1:4001
 
 That is it. The installer:
 
-- copies tokmon into `~/.tokmon/app`
-- creates `~/.tokmon/app/.venv`
+- copies llmeter into `~/.llmeter/app`
+- creates `~/.llmeter/app/.venv`
 - installs pinned Python dependencies from `requirements.txt`
 - writes a launchd service for the installed app path
-- starts tokmon now and on future logins
+- starts llmeter now and on future logins
 - opens the dashboard
 
 Logs are written to:
 
 ```text
-~/.openclaw/logs/tokmon.log
+~/.llmeter/logs/llmeter.log
 ```
 
 The SQLite database is written to:
 
 ```text
-~/.tokmon/app/data/tokmon.db
+~/.llmeter/app/data/llmeter.db
 ```
 
 If you are trying the current GitHub version before the npm package is
 published, use:
 
 ```bash
-npx github:jawnty/tokmon install
+npx github:jawnty/llmeter install
 ```
 
-## Using tokmon
+## Using llmeter
 
 The dashboard shows:
 
@@ -97,63 +97,63 @@ unstuck without leaving the app.
 Stop:
 
 ```bash
-npx tokmon stop
+npx llmeter stop
 ```
 
 Start:
 
 ```bash
-npx tokmon start
+npx llmeter start
 ```
 
 Restart:
 
 ```bash
-npx tokmon stop
-npx tokmon start
+npx llmeter stop
+npx llmeter start
 ```
 
 Check status:
 
 ```bash
-npx tokmon status
+npx llmeter status
 ```
 
 Remove the installed app:
 
 ```bash
-npx tokmon uninstall
+npx llmeter uninstall
 ```
 
 ## Configuration
 
-Most users do not need any configuration. tokmon infers paths from the checkout
+Most users do not need any configuration. llmeter infers paths from the checkout
 location and from the standard Claude Code and Codex log directories.
 
 Advanced overrides:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `TOKMON_HOST` | `127.0.0.1` | bind address |
-| `TOKMON_PORT` | `4001` | dashboard port |
-| `TOKMON_DB_PATH` | `data/tokmon.db` | SQLite database path |
-| `TOKMON_DATA_DIR` | `data` | database directory when `TOKMON_DB_PATH` is unset |
-| `TOKMON_LOG_DIR` | `~/.openclaw/logs` | launchd log directory used by the installer |
-| `TOKMON_CLAUDE_GLOB` | `~/.claude/projects/**/*.jsonl` | Claude Code log glob |
-| `TOKMON_CODEX_GLOB` | `~/.codex/sessions/**/*.jsonl` | Codex log glob |
+| `LLMETER_HOST` | `127.0.0.1` | bind address |
+| `LLMETER_PORT` | `4001` | dashboard port |
+| `LLMETER_DB_PATH` | `data/llmeter.db` | SQLite database path |
+| `LLMETER_DATA_DIR` | `data` | database directory when `LLMETER_DB_PATH` is unset |
+| `LLMETER_LOG_DIR` | `~/.llmeter/logs` | launchd log directory used by the installer |
+| `LLMETER_CLAUDE_GLOB` | `~/.claude/projects/**/*.jsonl` | Claude Code log glob |
+| `LLMETER_CODEX_GLOB` | `~/.codex/sessions/**/*.jsonl` | Codex log glob |
 
 Example:
 
 ```bash
-TOKMON_PORT=4010 bash scripts/install.sh
+LLMETER_PORT=4010 bash scripts/install.sh
 ```
 
 ## LiteLLM And Security
 
-tokmon's v1 ingestion path for Claude Code and Codex reads local log files. It
+llmeter's v1 ingestion path for Claude Code and Codex reads local log files. It
 does not proxy those tools through LiteLLM.
 
-The broader design treats tokmon as the dashboard/storage layer above local LLM
+The broader design treats llmeter as the dashboard/storage layer above local LLM
 tooling. For tools that need a proxy or provider-normalization layer, the
 expected expansion path is a LiteLLM-backed ingestion source. That LiteLLM path
 should use exact pinned versions, not floating installs.
@@ -168,8 +168,8 @@ automatically safe.
 Set up dependencies:
 
 ```bash
-git clone https://github.com/jawnty/tokmon.git
-cd tokmon
+git clone https://github.com/jawnty/llmeter.git
+cd llmeter
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
@@ -178,7 +178,7 @@ pip install -r requirements.txt
 Run locally:
 
 ```bash
-python -m tokmon
+python -m llmeter
 ```
 
 Run tests:
@@ -190,19 +190,19 @@ pytest
 Test the npm wrapper from the checkout:
 
 ```bash
-node bin/tokmon.js --help
+node bin/llmeter.js --help
 npm pack --dry-run
 ```
 
 ## Data Model
 
-tokmon stores:
+llmeter stores:
 
 - `sessions`: source, project, working directory, opening prompt, models
 - `turns`: timestamp, token counts, local day/hour bucket, reference cost
 - `file_offsets`: last ingested byte offset for each JSONL file
 
-The database is local SQLite. No usage data is sent anywhere by tokmon.
+The database is local SQLite. No usage data is sent anywhere by llmeter.
 
 ## Roadmap
 

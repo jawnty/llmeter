@@ -6,10 +6,10 @@ const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-const APP_DIR = path.join(os.homedir(), ".tokmon", "app");
-const SERVICE = "com.tokmon.monitor";
-const DEFAULT_HOST = process.env.TOKMON_HOST || "127.0.0.1";
-const DEFAULT_PORT = process.env.TOKMON_PORT || "4001";
+const APP_DIR = path.join(os.homedir(), ".llmeter", "app");
+const SERVICE = "com.llmeter.monitor";
+const DEFAULT_HOST = process.env.LLMETER_HOST || "127.0.0.1";
+const DEFAULT_PORT = process.env.LLMETER_PORT || "4001";
 const URL = `http://${DEFAULT_HOST}:${DEFAULT_PORT}`;
 
 const SOURCE_DIR = path.resolve(__dirname, "..");
@@ -27,7 +27,7 @@ function log(message = "") {
 }
 
 function fail(message, code = 1) {
-  process.stderr.write(`tokmon: ${message}\n`);
+  process.stderr.write(`llmeter: ${message}\n`);
   process.exit(code);
 }
 
@@ -81,7 +81,7 @@ function ensureMac() {
 
 function ensurePython() {
   const candidates = [
-    process.env.TOKMON_PYTHON,
+    process.env.LLMETER_PYTHON,
     "python3.14",
     "python3.13",
     "python3.12",
@@ -96,7 +96,7 @@ function ensurePython() {
     });
     if (result.ok) return candidate;
   }
-  fail("Python 3.11 or newer is required. Install Python, then run npx tokmon install again.");
+  fail("Python 3.11 or newer is required. Install Python, then run npx llmeter install again.");
 }
 
 function detectLogs() {
@@ -115,7 +115,7 @@ function install(options = {}) {
   ensureMac();
   const python = ensurePython();
 
-  log("tokmon");
+  log("llmeter");
   log("");
   log(`✓ found ${python}`);
   log(`✓ installing runtime at ${APP_DIR}`);
@@ -131,9 +131,9 @@ function install(options = {}) {
 
   const env = {
     ...process.env,
-    TOKMON_HOST: DEFAULT_HOST,
-    TOKMON_PORT: DEFAULT_PORT,
-    TOKMON_PYTHON: python,
+    LLMETER_HOST: DEFAULT_HOST,
+    LLMETER_PORT: DEFAULT_PORT,
+    LLMETER_PYTHON: python,
   };
   const installer = path.join(APP_DIR, "scripts", "install.sh");
   const result = run("bash", [installer], { cwd: APP_DIR, env });
@@ -181,7 +181,7 @@ function stopPortListenersQuiet() {
   if (!result.ok || !result.stdout.trim()) return;
   for (const pid of result.stdout.trim().split(/\s+/)) {
     const ps = run("ps", ["-p", pid, "-o", "command="], { capture: true });
-    if (ps.stdout.includes("-m tokmon")) {
+    if (ps.stdout.includes("-m llmeter")) {
       run("kill", [pid], { capture: true });
     }
   }
@@ -200,7 +200,7 @@ function checkHttp(callback) {
 }
 
 function status() {
-  log("tokmon status");
+  log("llmeter status");
   log("");
   log(`app: ${fs.existsSync(APP_DIR) ? APP_DIR : "not installed"}`);
   const svc = serviceStatus();
@@ -217,17 +217,17 @@ function start() {
   ensureMac();
   const plist = path.join(os.homedir(), "Library", "LaunchAgents", `${SERVICE}.plist`);
   const domain = `gui/${process.getuid()}`;
-  if (!fs.existsSync(plist)) fail("tokmon is not installed yet. Run: npx tokmon install");
+  if (!fs.existsSync(plist)) fail("llmeter is not installed yet. Run: npx llmeter install");
   run("launchctl", ["bootstrap", domain, plist], { capture: true });
   run("launchctl", ["kickstart", "-k", `${domain}/${SERVICE}`], { capture: true });
-  log(`✓ started tokmon at ${URL}`);
+  log(`✓ started llmeter at ${URL}`);
 }
 
 function stop() {
   ensureMac();
   stopServiceQuiet();
   stopPortListenersQuiet();
-  log("✓ stopped tokmon");
+  log("✓ stopped llmeter");
 }
 
 function uninstall() {
@@ -237,16 +237,16 @@ function uninstall() {
 }
 
 function help() {
-  log(`tokmon
+  log(`llmeter
 
 Usage:
-  npx tokmon              Install and open the dashboard
-  npx tokmon install      Install the launchd service and open the dashboard
-  npx tokmon open         Open the dashboard
-  npx tokmon status       Show service, log, and dashboard status
-  npx tokmon start        Start the launchd service
-  npx tokmon stop         Stop the launchd service
-  npx tokmon uninstall    Stop tokmon and remove ~/.tokmon/app
+  npx llmeter              Install and open the dashboard
+  npx llmeter install      Install the launchd service and open the dashboard
+  npx llmeter open         Open the dashboard
+  npx llmeter status       Show service, log, and dashboard status
+  npx llmeter start        Start the launchd service
+  npx llmeter stop         Stop the launchd service
+  npx llmeter uninstall    Stop llmeter and remove ~/.llmeter/app
 
 Options:
   --no-open               Install without opening the browser

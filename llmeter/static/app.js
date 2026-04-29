@@ -66,8 +66,8 @@ async function loadSessions() {
   tbody.querySelectorAll("tr").forEach((tr) => {
     tr.addEventListener("click", () => showDetail(tr.dataset.id));
   });
-  if (location.hash === "#first-session" && !window.__tokmonOpenedFirstSession) {
-    window.__tokmonOpenedFirstSession = true;
+  if (location.hash === "#first-session" && !window.__llmeterOpenedFirstSession) {
+    window.__llmeterOpenedFirstSession = true;
     showDetail(d.sessions[0].id);
   }
 }

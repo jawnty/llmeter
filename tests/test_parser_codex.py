@@ -1,6 +1,6 @@
 import json
 
-from tokmon import parser_codex
+from llmeter import parser_codex
 
 
 def test_codex_session_prompt_and_token_count():
@@ -13,7 +13,7 @@ def test_codex_session_prompt_and_token_count():
             "timestamp": "2026-04-29T17:00:00Z",
             "payload": {
                 "id": "sess-1",
-                "cwd": "/Users/john/projects/tokmon",
+                "cwd": "/Users/john/projects/llmeter",
                 "timestamp": "2026-04-29T17:00:00Z",
             },
         },
@@ -25,7 +25,7 @@ def test_codex_session_prompt_and_token_count():
         {
             "type": "event_msg",
             "timestamp": "2026-04-29T17:02:00Z",
-            "payload": {"type": "user_message", "message": "Please inspect tokmon"},
+            "payload": {"type": "user_message", "message": "Please inspect llmeter"},
         },
         {
             "type": "event_msg",
@@ -50,7 +50,7 @@ def test_codex_session_prompt_and_token_count():
         events.extend(parser_codex.parse_line(json.dumps(line), path))
 
     assert [kind for kind, _ in events] == ["session_init", "session_init", "session_init", "turn"]
-    assert events[1][1]["opening_prompt"] == "Please inspect tokmon"
+    assert events[1][1]["opening_prompt"] == "Please inspect llmeter"
     turn = events[-1][1]
     assert turn["session_id"] == "sess-1"
     assert turn["source"] == "codex"

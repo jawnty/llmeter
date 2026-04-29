@@ -1,6 +1,6 @@
 import json
 
-from tokmon import parser_claude
+from llmeter import parser_claude
 
 
 def test_claude_user_line_initializes_session():
@@ -8,7 +8,7 @@ def test_claude_user_line_initializes_session():
         "type": "user",
         "sessionId": "abc",
         "timestamp": "2026-04-29T17:00:00Z",
-        "cwd": "/Users/john/projects/tokmon",
+        "cwd": "/Users/john/projects/llmeter",
         "message": {"content": "Build the token dashboard"},
     })
 
@@ -17,8 +17,8 @@ def test_claude_user_line_initializes_session():
     assert events == [("session_init", {
         "id": "abc",
         "source": "claude",
-        "cwd": "/Users/john/projects/tokmon",
-        "project": "tokmon",
+        "cwd": "/Users/john/projects/llmeter",
+        "project": "llmeter",
         "started_at": "2026-04-29T17:00:00Z",
         "last_seen_at": "2026-04-29T17:00:00Z",
         "opening_prompt": "Build the token dashboard",
@@ -33,7 +33,7 @@ def test_claude_assistant_line_emits_turn():
         "sessionId": "abc",
         "uuid": "turn-1",
         "timestamp": "2026-04-29T17:00:00Z",
-        "cwd": "/Users/john/projects/tokmon",
+        "cwd": "/Users/john/projects/llmeter",
         "message": {
             "id": "msg-1",
             "model": "claude-sonnet-4",

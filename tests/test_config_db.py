@@ -1,9 +1,9 @@
-from tokmon import config, db
+from llmeter import config, db
 
 
 def test_db_path_can_be_overridden(tmp_path, monkeypatch):
     target = tmp_path / "custom.db"
-    monkeypatch.setenv("TOKMON_DB_PATH", str(target))
+    monkeypatch.setenv("LLMETER_DB_PATH", str(target))
 
     assert config.db_path() == target
 
@@ -20,7 +20,7 @@ def test_db_path_can_be_overridden(tmp_path, monkeypatch):
 
 
 def test_insert_turn_dedupes_by_raw_uuid(tmp_path, monkeypatch):
-    monkeypatch.setenv("TOKMON_DB_PATH", str(tmp_path / "tokmon.db"))
+    monkeypatch.setenv("LLMETER_DB_PATH", str(tmp_path / "llmeter.db"))
     db.init()
 
     turn = {
@@ -46,6 +46,6 @@ def test_insert_turn_dedupes_by_raw_uuid(tmp_path, monkeypatch):
 
 
 def test_invalid_port_falls_back(monkeypatch):
-    monkeypatch.setenv("TOKMON_PORT", "oops")
+    monkeypatch.setenv("LLMETER_PORT", "oops")
 
     assert config.port() == 4001

@@ -1,4 +1,4 @@
-"""Entry point: `python -m tokmon` runs the server."""
+"""Entry point: `python -m llmeter` runs the server."""
 
 import uvicorn
 from . import config
@@ -6,7 +6,7 @@ from . import config
 
 def main():
     uvicorn.run(
-        "tokmon.server:app",
+        "llmeter.server:app",
         host=config.host(),
         port=config.port(),
         log_level="info",

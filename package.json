@@ -1,17 +1,17 @@
 {
-  "name": "tokmon",
+  "name": "llmeter",
   "version": "0.1.0",
   "description": "Local token usage monitor for Claude Code and Codex",
   "license": "MIT",
   "bin": {
-    "tokmon": "bin/tokmon.js"
+    "llmeter": "bin/llmeter.js"
   },
   "files": [
     "bin",
     "docs",
     "launchd",
     "scripts",
-    "tokmon",
+    "llmeter",
     "README.md",
     "requirements.txt"
   ],
@@ -19,8 +19,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "prepack": "find tokmon -name __pycache__ -type d -prune -exec rm -rf {} +",
-    "test": "node bin/tokmon.js --help"
+    "prepack": "find llmeter -name __pycache__ -type d -prune -exec rm -rf {} +",
+    "test": "node bin/llmeter.js --help"
   },
   "keywords": [
     "llm",
