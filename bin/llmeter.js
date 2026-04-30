@@ -9,8 +9,9 @@ const { spawnSync } = require("child_process");
 const APP_DIR = path.join(os.homedir(), ".llmeter", "app");
 const MENUBAR_VENV = path.join(os.homedir(), ".llmeter", "menubar-venv");
 const APP_BUNDLE = "/Applications/Llmeter.app";
-const LOGIN_ITEM_NAME = "Llmeter";
 const SERVICE = "com.llmeter.monitor";
+const MENUBAR_SERVICE = "com.llmeter.menubar";
+const MENUBAR_PLIST = path.join(os.homedir(), "Library", "LaunchAgents", `${MENUBAR_SERVICE}.plist`);
 const DEFAULT_HOST = process.env.LLMETER_HOST || "127.0.0.1";
 const DEFAULT_PORT = process.env.LLMETER_PORT || "4001";
 const URL = `http://${DEFAULT_HOST}:${DEFAULT_PORT}`;
@@ -244,6 +245,34 @@ function menubarRunning() {
   return r.ok && r.stdout.trim().length > 0;
 }
 
+function menubarAgentLoaded() {
+  if (process.platform !== "darwin") return false;
+  const domain = `gui/${process.getuid()}`;
+  const r = run("launchctl", ["print", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+  return r.ok;
+}
+
+function startMenubar() {
+  if (process.platform !== "darwin") return false;
+  const domain = `gui/${process.getuid()}`;
+  if (menubarAgentLoaded()) {
+    const r = run("launchctl", ["kickstart", "-k", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+    if (r.ok) return true;
+  }
+  // Fallback: bootstrap the agent if its plist is on disk, then kickstart
+  if (fs.existsSync(MENUBAR_PLIST)) {
+    run("launchctl", ["bootstrap", domain, MENUBAR_PLIST], { capture: true });
+    const r = run("launchctl", ["kickstart", "-k", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+    if (r.ok) return true;
+  }
+  // Last resort: open the .app directly
+  if (menubarInstalled()) {
+    const r = run("open", ["-a", "Llmeter"], { capture: true });
+    return r.ok;
+  }
+  return false;
+}
+
 function status() {
   log("llmeter status");
   log("");
@@ -254,6 +283,7 @@ function status() {
     ? (menubarRunning() ? "installed and running" : "installed (not running)")
     : "not installed";
   log(`menu bar app: ${mbState}`);
+  log(`menu bar LaunchAgent: ${menubarAgentLoaded() ? "loaded" : "not loaded"}`);
   for (const item of detectLogs()) {
     log(`${item.name}: ${item.exists ? item.dir : "not found"}`);
   }
@@ -272,8 +302,9 @@ function start() {
     log(`✓ started llmeter at ${URL}`);
   }
   if (menubarInstalled()) {
-    run("open", ["-a", "Llmeter"], { capture: true });
-    log("✓ launched menu bar app");
+    if (startMenubar()) {
+      log("✓ launched menu bar app");
+    }
   }
   if (!fs.existsSync(plist) && !menubarInstalled()) {
     fail("llmeter is not installed yet. Run: npx llmeter install");
@@ -297,11 +328,10 @@ function uninstall() {
     run("bash", [menubarUninstaller], { capture: false });
   } else if (process.platform === "darwin") {
     run("osascript", ["-e", 'tell application "Llmeter" to quit'], { capture: true });
-    run(
-      "osascript",
-      ["-e", `tell application "System Events" to delete (every login item whose name is "${LOGIN_ITEM_NAME}")`],
-      { capture: true },
-    );
+    if (fs.existsSync(MENUBAR_PLIST)) {
+      run("launchctl", ["bootout", `gui/${process.getuid()}`, MENUBAR_PLIST], { capture: true });
+      fs.rmSync(MENUBAR_PLIST, { force: true });
+    }
     fs.rmSync(APP_BUNDLE, { recursive: true, force: true });
     fs.rmSync(MENUBAR_VENV, { recursive: true, force: true });
   }
@@ -319,7 +349,7 @@ Usage:
   npx llmeter status       Show service, log, dashboard, and menu bar status
   npx llmeter start        Start the launchd service and menu bar app
   npx llmeter stop         Stop the launchd service and menu bar app
-  npx llmeter uninstall    Remove dashboard, menu bar app, Login Item, and ~/.llmeter
+  npx llmeter uninstall    Remove dashboard, menu bar app, LaunchAgent, and ~/.llmeter
 
 Options:
   --no-menubar            Install only the dashboard (skip Llmeter.app)

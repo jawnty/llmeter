@@ -2,11 +2,12 @@
 # Install the llmeter menu bar app.
 #
 # Builds Llmeter.app with py2app in alias mode (fast, references the source
-# under ~/.llmeter/app), copies it to /Applications, registers it as a Login
-# Item, and launches it.
+# under ~/.llmeter/app), copies it to /Applications, registers a launchd
+# LaunchAgent so it starts at login, and launches it now.
 #
-# Idempotent: re-running removes any prior bundle + Login Item before
-# installing the new one. Safe to run after every dashboard install.
+# Idempotent: re-running replaces any prior bundle + LaunchAgent cleanly.
+# Requires no user-granted permissions (no osascript / Login Item / System
+# Events automation).
 
 set -euo pipefail
 
@@ -22,7 +23,10 @@ PYTHON="${LLMETER_PYTHON:-python3}"
 MENUBAR_VENV="$HOME/.llmeter/menubar-venv"
 APP_DEST="/Applications/Llmeter.app"
 APP_NAME="Llmeter"
-LOGIN_ITEM_NAME="Llmeter"
+LOG_DIR="${LLMETER_LOG_DIR:-$HOME/.llmeter/logs}"
+PLIST="$HOME/Library/LaunchAgents/com.llmeter.menubar.plist"
+DOMAIN="gui/$(id -u)"
+LABEL="com.llmeter.menubar"
 
 echo "[llmeter] installing menu bar app"
 echo "[llmeter] menubar venv: $MENUBAR_VENV"
@@ -49,25 +53,43 @@ if [ ! -d "dist/Llmeter.app" ]; then
 fi
 
 # 3. install to /Applications (idempotent)
-# Try to quit any running instance first
 osascript -e 'tell application "Llmeter" to quit' >/dev/null 2>&1 || true
 pkill -f "/Applications/Llmeter.app" >/dev/null 2>&1 || true
 rm -rf "$APP_DEST"
 cp -R "dist/Llmeter.app" "$APP_DEST"
 
-# 4. Login Item (idempotent: remove existing entry by name first)
-osascript -e "tell application \"System Events\" to delete (every login item whose name is \"$LOGIN_ITEM_NAME\")" >/dev/null 2>&1 || true
-LOGIN_OK=1
-osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"$APP_DEST\", hidden:false, name:\"$LOGIN_ITEM_NAME\"}" >/dev/null 2>&1 || LOGIN_OK=0
+# 4. LaunchAgent — runs `open -a Llmeter` at login. KeepAlive=false so the
+# agent exits once the app is launched; the app itself stays running.
+mkdir -p "$LOG_DIR" "$HOME/Library/LaunchAgents"
 
-# 5. launch now
-open -a "$APP_NAME" || true
+cat > "$PLIST" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/open</string>
+    <string>-a</string>
+    <string>$APP_DEST</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>$LOG_DIR/menubar.log</string>
+  <key>StandardErrorPath</key>
+  <string>$LOG_DIR/menubar.log</string>
+</dict>
+</plist>
+PLIST
 
-if [ "$LOGIN_OK" = "1" ]; then
-  echo "[llmeter] menu bar app installed at $APP_DEST and added to Login Items"
-else
-  echo "[llmeter] menu bar app installed at $APP_DEST"
-  echo "[llmeter] could not register Login Item automatically. To start on login,"
-  echo "[llmeter] grant Automation permission to your terminal for System Events,"
-  echo "[llmeter] or add Llmeter.app via System Settings → General → Login Items."
-fi
+# 5. (re)load the LaunchAgent and kick it now
+launchctl bootout "$DOMAIN" "$PLIST" 2>/dev/null || true
+launchctl bootstrap "$DOMAIN" "$PLIST"
+launchctl kickstart -k "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
+
+echo "[llmeter] menu bar app installed at $APP_DEST and registered to start at login"
