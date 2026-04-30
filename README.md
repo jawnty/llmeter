@@ -80,6 +80,64 @@ The cost number is a reference estimate only. It uses approximate published API
 prices so you can spot expensive sessions. It is not your real bill, especially
 if you use subscription products.
 
+## Menu Bar App (macOS)
+
+`npx llmeter install` now installs **both** the dashboard and the menu bar
+app. There is nothing extra to do — after install you should see a `⚡` icon
+in the macOS menu bar and the dashboard at `http://127.0.0.1:4001`.
+
+The menu bar app shows:
+
+- compact token count in the menu bar (e.g. `⚡ 1.2M`)
+- today's total tokens, Claude vs Codex split, reference cost
+- last session summary (project · turns · tokens)
+- "Open dashboard" → `http://127.0.0.1:4001`
+- "Refresh now", "Quit"
+
+It is a **read-only client of the same SQLite database** the dashboard
+writes to. Ingest stays in the dashboard's launchd service. The menu bar
+app polls the database every 5 seconds (override with
+`LLMETER_MENUBAR_REFRESH_SEC`).
+
+The installer:
+
+- creates a separate venv at `~/.llmeter/menubar-venv`
+- installs `requirements-menubar.txt` (rumps)
+- writes a launchd LaunchAgent at
+  `~/Library/LaunchAgents/com.llmeter.menubar.plist` that runs
+  `python -m llmeter.menubar` from the installed app tree
+- removes any older `/Applications/Llmeter.app` test bundle so stale py2app
+  launch errors cannot survive an upgrade
+- launches it now via `launchctl kickstart`
+
+Install flags:
+
+- `--no-menubar` — install only the dashboard.
+- `--menubar-only` — install only the menu bar app. The dashboard service
+  currently owns ingest, so without it the menu bar will show stale data.
+  Tradeoff documented in `SPEC.md`.
+
+`npx llmeter uninstall` removes the menu bar LaunchAgent plist, menubar venv,
+any older test bundle, dashboard service, and `~/.llmeter` together.
+
+`npx llmeter status` reports both the dashboard service and the menu bar app.
+
+### Development (manual)
+
+If you are hacking on the menu bar code without going through the npm
+installer:
+
+```bash
+cd /path/to/llmeter
+python3 -m venv .venv-menubar
+. .venv-menubar/bin/activate
+pip install -r requirements.txt -r requirements-menubar.txt
+
+python -m llmeter.menubar
+```
+
+See `SPEC.md` for the full design rationale.
+
 ## Help Page
 
 The running app includes a short Help page linked from the top right of the

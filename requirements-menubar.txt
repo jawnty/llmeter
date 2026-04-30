@@ -1,0 +1,3 @@
+# Menu bar runtime deps. Kept separate from requirements.txt so dashboard-only
+# users do not need pyobjc.
+rumps==0.4.0

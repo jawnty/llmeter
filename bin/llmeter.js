@@ -7,7 +7,11 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const APP_DIR = path.join(os.homedir(), ".llmeter", "app");
+const MENUBAR_VENV = path.join(os.homedir(), ".llmeter", "menubar-venv");
+const APP_BUNDLE = "/Applications/Llmeter.app";
 const SERVICE = "com.llmeter.monitor";
+const MENUBAR_SERVICE = "com.llmeter.menubar";
+const MENUBAR_PLIST = path.join(os.homedir(), "Library", "LaunchAgents", `${MENUBAR_SERVICE}.plist`);
 const DEFAULT_HOST = process.env.LLMETER_HOST || "127.0.0.1";
 const DEFAULT_PORT = process.env.LLMETER_PORT || "4001";
 const URL = `http://${DEFAULT_HOST}:${DEFAULT_PORT}`;
@@ -16,10 +20,13 @@ const SOURCE_DIR = path.resolve(__dirname, "..");
 const EXCLUDED = new Set([
   ".git",
   ".venv",
+  ".venv-menubar",
   "data",
   "node_modules",
   ".pytest_cache",
   "__pycache__",
+  "build",
+  "dist",
 ]);
 
 function log(message = "") {
@@ -75,7 +82,7 @@ function cleanAppDir() {
 
 function ensureMac() {
   if (process.platform !== "darwin") {
-    fail("the launchd installer currently supports macOS only");
+    fail("llmeter currently supports macOS only. Re-run with --no-menubar on Linux/Windows for the dashboard alone (also Mac-only at the moment).");
   }
 }
 
@@ -114,38 +121,67 @@ function detectLogs() {
 function install(options = {}) {
   ensureMac();
   const python = ensurePython();
+  const installDashboard = options.dashboard !== false;
+  const installMenubar = options.menubar !== false;
 
   log("llmeter");
   log("");
   log(`✓ found ${python}`);
-  log(`✓ installing runtime at ${APP_DIR}`);
 
-  stopServiceQuiet();
-  stopPortListenersQuiet();
-  if (path.resolve(SOURCE_DIR) !== path.resolve(APP_DIR)) {
-    cleanAppDir();
-    copyDir(SOURCE_DIR, APP_DIR);
+  // Always make sure source is staged at APP_DIR; dashboard install relies on it,
+  // and the menu bar LaunchAgent runs the installed module from this tree.
+  if (installDashboard) {
+    log(`✓ installing dashboard at ${APP_DIR}`);
+    stopServiceQuiet();
+    stopPortListenersQuiet();
+    if (path.resolve(SOURCE_DIR) !== path.resolve(APP_DIR)) {
+      cleanAppDir();
+      copyDir(SOURCE_DIR, APP_DIR);
+    } else {
+      fs.mkdirSync(APP_DIR, { recursive: true });
+    }
+    const env = {
+      ...process.env,
+      LLMETER_HOST: DEFAULT_HOST,
+      LLMETER_PORT: DEFAULT_PORT,
+      LLMETER_PYTHON: python,
+    };
+    const installer = path.join(APP_DIR, "scripts", "install.sh");
+    const result = run("bash", [installer], { cwd: APP_DIR, env });
+    if (!result.ok) fail("dashboard install failed");
   } else {
-    fs.mkdirSync(APP_DIR, { recursive: true });
+    log("• skipping dashboard install (--menubar-only)");
+    log("  note: ingest currently runs inside the dashboard service. Without it,");
+    log("  the menu bar app reads an empty/stale SQLite. Tradeoff documented in SPEC.md.");
+    if (path.resolve(SOURCE_DIR) !== path.resolve(APP_DIR) && !fs.existsSync(APP_DIR)) {
+      cleanAppDir();
+      copyDir(SOURCE_DIR, APP_DIR);
+    }
   }
 
-  const env = {
-    ...process.env,
-    LLMETER_HOST: DEFAULT_HOST,
-    LLMETER_PORT: DEFAULT_PORT,
-    LLMETER_PYTHON: python,
-  };
-  const installer = path.join(APP_DIR, "scripts", "install.sh");
-  const result = run("bash", [installer], { cwd: APP_DIR, env });
-  if (!result.ok) fail("install failed");
+  if (installMenubar) {
+    log("✓ installing menu bar");
+    const env = {
+      ...process.env,
+      LLMETER_PYTHON: python,
+    };
+    const result = run("bash", [path.join(APP_DIR, "scripts", "install_menubar.sh")], {
+      cwd: APP_DIR,
+      env,
+    });
+    if (!result.ok) fail("menu bar install failed");
+  } else {
+    log("• skipping menu bar app (--no-menubar)");
+  }
 
   for (const item of detectLogs()) {
     log(`${item.exists ? "✓" : "•"} ${item.exists ? "found" : "did not find"} ${item.name} logs at ${item.dir}`);
   }
 
   log("");
-  log(`Open: ${URL}`);
-  if (options.open !== false) openDashboard();
+  if (installDashboard) log(`Dashboard: ${URL}`);
+  if (installMenubar) log("Menu bar: look for ⚡ in the macOS menu bar (top right)");
+  if (installDashboard && options.open !== false) openDashboard();
 }
 
 function openDashboard() {
@@ -199,12 +235,55 @@ function checkHttp(callback) {
   });
 }
 
+function menubarInstalled() {
+  return fs.existsSync(MENUBAR_PLIST) || fs.existsSync(MENUBAR_VENV) || fs.existsSync(APP_BUNDLE);
+}
+
+function menubarRunning() {
+  if (process.platform !== "darwin") return false;
+  const r = run("pgrep", ["-f", "llmeter.menubar|/Applications/Llmeter.app"], { capture: true });
+  return r.ok && r.stdout.trim().length > 0;
+}
+
+function menubarAgentLoaded() {
+  if (process.platform !== "darwin") return false;
+  const domain = `gui/${process.getuid()}`;
+  const r = run("launchctl", ["print", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+  return r.ok;
+}
+
+function startMenubar() {
+  if (process.platform !== "darwin") return false;
+  const domain = `gui/${process.getuid()}`;
+  if (menubarAgentLoaded()) {
+    const r = run("launchctl", ["kickstart", "-k", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+    if (r.ok) return true;
+  }
+  // Fallback: bootstrap the agent if its plist is on disk, then kickstart
+  if (fs.existsSync(MENUBAR_PLIST)) {
+    run("launchctl", ["bootstrap", domain, MENUBAR_PLIST], { capture: true });
+    const r = run("launchctl", ["kickstart", "-k", `${domain}/${MENUBAR_SERVICE}`], { capture: true });
+    if (r.ok) return true;
+  }
+  // Last resort: open the .app directly
+  if (menubarInstalled()) {
+    const r = run("open", ["-a", "Llmeter"], { capture: true });
+    return r.ok;
+  }
+  return false;
+}
+
 function status() {
   log("llmeter status");
   log("");
-  log(`app: ${fs.existsSync(APP_DIR) ? APP_DIR : "not installed"}`);
+  log(`app source: ${fs.existsSync(APP_DIR) ? APP_DIR : "not installed"}`);
   const svc = serviceStatus();
-  log(`service: ${svc.ok ? "running/loaded" : "not loaded"}`);
+  log(`dashboard service: ${svc.ok ? "running/loaded" : "not loaded"}`);
+  const mbState = menubarInstalled()
+    ? (menubarRunning() ? "installed and running" : "installed (not running)")
+    : "not installed";
+  log(`menu bar app: ${mbState}`);
+  log(`menu bar LaunchAgent: ${menubarAgentLoaded() ? "loaded" : "not loaded"}`);
   for (const item of detectLogs()) {
     log(`${item.name}: ${item.exists ? item.dir : "not found"}`);
   }
@@ -217,21 +296,47 @@ function start() {
   ensureMac();
   const plist = path.join(os.homedir(), "Library", "LaunchAgents", `${SERVICE}.plist`);
   const domain = `gui/${process.getuid()}`;
-  if (!fs.existsSync(plist)) fail("llmeter is not installed yet. Run: npx llmeter install");
-  run("launchctl", ["bootstrap", domain, plist], { capture: true });
-  run("launchctl", ["kickstart", "-k", `${domain}/${SERVICE}`], { capture: true });
-  log(`✓ started llmeter at ${URL}`);
+  if (fs.existsSync(plist)) {
+    run("launchctl", ["bootstrap", domain, plist], { capture: true });
+    run("launchctl", ["kickstart", "-k", `${domain}/${SERVICE}`], { capture: true });
+    log(`✓ started llmeter at ${URL}`);
+  }
+  if (menubarInstalled()) {
+    if (startMenubar()) {
+      log("✓ launched menu bar app");
+    }
+  }
+  if (!fs.existsSync(plist) && !menubarInstalled()) {
+    fail("llmeter is not installed yet. Run: npx llmeter install");
+  }
 }
 
 function stop() {
   ensureMac();
   stopServiceQuiet();
   stopPortListenersQuiet();
+  run("osascript", ["-e", 'tell application "Llmeter" to quit'], { capture: true });
+  run("pkill", ["-x", "Llmeter"], { capture: true });
+  run("pkill", ["-f", "llmeter.menubar"], { capture: true });
   log("✓ stopped llmeter");
 }
 
 function uninstall() {
   stop();
+  const menubarUninstaller = path.join(APP_DIR, "scripts", "uninstall_menubar.sh");
+  if (fs.existsSync(menubarUninstaller)) {
+    run("bash", [menubarUninstaller], { capture: false });
+  } else if (process.platform === "darwin") {
+    run("osascript", ["-e", 'tell application "Llmeter" to quit'], { capture: true });
+    if (fs.existsSync(MENUBAR_PLIST)) {
+      run("launchctl", ["bootout", `gui/${process.getuid()}`, MENUBAR_PLIST], { capture: true });
+      fs.rmSync(MENUBAR_PLIST, { force: true });
+    }
+    run("pkill", ["-x", "Llmeter"], { capture: true });
+    run("pkill", ["-f", "llmeter.menubar"], { capture: true });
+    fs.rmSync(APP_BUNDLE, { recursive: true, force: true });
+    fs.rmSync(MENUBAR_VENV, { recursive: true, force: true });
+  }
   fs.rmSync(APP_DIR, { recursive: true, force: true });
   log(`✓ removed ${APP_DIR}`);
 }
@@ -240,15 +345,20 @@ function help() {
   log(`llmeter
 
 Usage:
-  npx llmeter              Install and open the dashboard
-  npx llmeter install      Install the launchd service and open the dashboard
+  npx llmeter              Install and open the dashboard + menu bar app
+  npx llmeter install      Install dashboard service + menu bar app
   npx llmeter open         Open the dashboard
-  npx llmeter status       Show service, log, and dashboard status
-  npx llmeter start        Start the launchd service
-  npx llmeter stop         Stop the launchd service
-  npx llmeter uninstall    Stop llmeter and remove ~/.llmeter/app
+  npx llmeter status       Show service, log, dashboard, and menu bar status
+  npx llmeter start        Start the launchd service and menu bar app
+  npx llmeter stop         Stop the launchd service and menu bar app
+  npx llmeter uninstall    Remove dashboard, menu bar app, LaunchAgent, and ~/.llmeter
 
 Options:
+  --no-menubar            Install only the dashboard (skip menu bar)
+  --menubar-only          Install only the menu bar app (skip the dashboard service).
+                          NOTE: ingest currently runs inside the dashboard service,
+                          so the menu bar will show no new data without it.
+                          See SPEC.md "Open Questions".
   --no-open               Install without opening the browser
   --help                  Show this help
 `);
@@ -262,10 +372,20 @@ if (args.includes("--help") || args.includes("-h")) {
 
 const command = args.find((arg) => !arg.startsWith("-")) || "install";
 const noOpen = args.includes("--no-open");
+const noMenubar = args.includes("--no-menubar");
+const menubarOnly = args.includes("--menubar-only");
+
+if (noMenubar && menubarOnly) {
+  fail("--no-menubar and --menubar-only are mutually exclusive");
+}
 
 switch (command) {
   case "install":
-    install({ open: !noOpen });
+    install({
+      open: !noOpen,
+      menubar: !noMenubar,
+      dashboard: !menubarOnly,
+    });
     break;
   case "open":
     openDashboard();
