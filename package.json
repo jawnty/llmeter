@@ -13,7 +13,8 @@
     "scripts",
     "llmeter",
     "README.md",
-    "requirements.txt"
+    "requirements.txt",
+    "requirements-menubar.txt"
   ],
   "engines": {
     "node": ">=18"

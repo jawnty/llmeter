@@ -1,7 +1,3 @@
-# Menu bar app build/runtime deps. Kept separate from requirements.txt so
-# dashboard-only users do not need pyobjc / py2app.
+# Menu bar runtime deps. Kept separate from requirements.txt so dashboard-only
+# users do not need pyobjc.
 rumps==0.4.0
-py2app==0.28.8
-# py2app 0.28.8 still imports pkg_resources, which setuptools 81+ removed.
-# Pin setuptools below 81 until py2app drops the import.
-setuptools<81

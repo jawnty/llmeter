@@ -1,9 +1,8 @@
 #!/bin/bash
 # Install the llmeter menu bar app.
 #
-# Builds Llmeter.app with py2app in alias mode (fast, references the source
-# under ~/.llmeter/app), copies it to /Applications, registers a launchd
-# LaunchAgent so it starts at login, and launches it now.
+# Creates a menu bar runtime venv, registers a launchd LaunchAgent so it starts
+# at login, and launches it now.
 #
 # Idempotent: re-running replaces any prior bundle + LaunchAgent cleanly.
 # Requires no user-granted permissions (no osascript / Login Item / System
@@ -28,7 +27,7 @@ PLIST="$HOME/Library/LaunchAgents/com.llmeter.menubar.plist"
 DOMAIN="gui/$(id -u)"
 LABEL="com.llmeter.menubar"
 
-echo "[llmeter] installing menu bar app"
+echo "[llmeter] installing menu bar"
 echo "[llmeter] menubar venv: $MENUBAR_VENV"
 
 # 1. venv
@@ -38,28 +37,18 @@ fi
 # shellcheck disable=SC1091
 . "$MENUBAR_VENV/bin/activate"
 python -m pip install --upgrade pip >/dev/null
-echo "[llmeter] installing menu bar deps (rumps, py2app, llmeter runtime)..."
+echo "[llmeter] installing menu bar deps (rumps + llmeter runtime)..."
 pip install -q -r requirements.txt
 pip install -q -r requirements-menubar.txt
 
-# 2. build alias bundle (fast; references this source tree)
-echo "[llmeter] building Llmeter.app (py2app alias mode)..."
-rm -rf build dist
-python setup_menubar.py py2app -A >/dev/null
-
-if [ ! -d "dist/Llmeter.app" ]; then
-  echo "[llmeter] py2app did not produce dist/Llmeter.app" >&2
-  exit 1
-fi
-
-# 3. install to /Applications (idempotent)
+# 2. remove any older py2app bundle/processes from previous test builds.
 osascript -e 'tell application "Llmeter" to quit' >/dev/null 2>&1 || true
 pkill -f "/Applications/Llmeter.app" >/dev/null 2>&1 || true
+pkill -x "Llmeter" >/dev/null 2>&1 || true
+pkill -f "llmeter.menubar" >/dev/null 2>&1 || true
 rm -rf "$APP_DEST"
-cp -R "dist/Llmeter.app" "$APP_DEST"
 
-# 4. LaunchAgent — runs `open -a Llmeter` at login. KeepAlive=false so the
-# agent exits once the app is launched; the app itself stays running.
+# 3. LaunchAgent — runs the menu bar module from the installed venv.
 mkdir -p "$LOG_DIR" "$HOME/Library/LaunchAgents"
 
 cat > "$PLIST" <<PLIST
@@ -71,10 +60,12 @@ cat > "$PLIST" <<PLIST
   <string>$LABEL</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/bin/open</string>
-    <string>-a</string>
-    <string>$APP_DEST</string>
+    <string>$MENUBAR_VENV/bin/python</string>
+    <string>-m</string>
+    <string>llmeter.menubar</string>
   </array>
+  <key>WorkingDirectory</key>
+  <string>$DIR</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -87,9 +78,9 @@ cat > "$PLIST" <<PLIST
 </plist>
 PLIST
 
-# 5. (re)load the LaunchAgent and kick it now
+# 4. (re)load the LaunchAgent and kick it now.
 launchctl bootout "$DOMAIN" "$PLIST" 2>/dev/null || true
 launchctl bootstrap "$DOMAIN" "$PLIST"
 launchctl kickstart -k "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
 
-echo "[llmeter] menu bar app installed at $APP_DEST and registered to start at login"
+echo "[llmeter] menu bar installed and registered to start at login"

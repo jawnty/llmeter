@@ -146,6 +146,35 @@ How John can try it:
 npx github:jawnty/llmeter#menubar-app install
 ```
 
+## Round 4 — py2app removed from default install path
+
+Real-world install exposed two release blockers:
+
+- The branch package omitted `requirements-menubar.txt`, so
+  `npx github:jawnty/llmeter#menubar-app install` could not install the menu
+  bar deps.
+- The generated py2app bundle could show a macOS launch-error dialog, which is
+  too fragile for the default one-shot installer.
+
+Changes made:
+
+- Added `requirements-menubar.txt` to the npm package file list.
+- Switched `llmeter/menubar/__main__.py` to an absolute import so script-style
+  execution works.
+- Removed `py2app` from the default menu bar runtime dependency path.
+- Changed `scripts/install_menubar.sh` so the LaunchAgent runs
+  `~/.llmeter/menubar-venv/bin/python -m llmeter.menubar` from
+  `~/.llmeter/app`.
+- Made install/uninstall clear out older `/Applications/Llmeter.app` test
+  bundles and stale processes.
+- Updated README/SPEC to describe the launchd+venv runtime path.
+
+Verification:
+
+- `.venv/bin/python -m pytest -q` -> 11 passed.
+- `npm test` -> passes.
+- `npm pack --dry-run` -> includes `requirements-menubar.txt`.
+
 That's the whole UX. Look for `⚡` in the menu bar; the dashboard opens
 automatically. To revert:
 

@@ -16,6 +16,8 @@ DOMAIN="gui/$(id -u)"
 
 osascript -e 'tell application "Llmeter" to quit' >/dev/null 2>&1 || true
 pkill -f "/Applications/Llmeter.app" >/dev/null 2>&1 || true
+pkill -x "Llmeter" >/dev/null 2>&1 || true
+pkill -f "llmeter.menubar" >/dev/null 2>&1 || true
 
 launchctl bootout "$DOMAIN" "$PLIST" 2>/dev/null || true
 rm -f "$PLIST"

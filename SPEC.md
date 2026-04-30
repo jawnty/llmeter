@@ -37,7 +37,7 @@ Claude Code logs     ┐
 ~/.claude/...        │
                      ├─►  ingest (tail JSONL) ──►  SQLite ──►  ┬─►  FastAPI dashboard (127.0.0.1:4001)
 Codex logs           │    llmeter/ingest.py        ~/.llmeter   │
-~/.codex/sessions/   ┘    llmeter/parser_*.py      /app/data/   └─►  rumps menu bar app (Llmeter.app)
+~/.codex/sessions/   ┘    llmeter/parser_*.py      /app/data/   └─►  rumps menu bar process
                                                    llmeter.db
 ```
 
@@ -77,8 +77,9 @@ Launched by a launchd LaunchAgent installed by `npx llmeter install`.
 
 ## Surface 2 — Menu Bar App (new)
 
-Native macOS status bar app, packaged as `Llmeter.app` via py2app.
-Built with [rumps](https://github.com/jaredks/rumps) (a thin pyobjc wrapper).
+Native macOS status bar process, built with
+[rumps](https://github.com/jaredks/rumps) (a thin pyobjc wrapper) and launched
+by launchd from the installed menu bar venv.
 
 ### What it shows
 
@@ -127,20 +128,19 @@ The installer:
 1. Stages source at `~/.llmeter/app`.
 2. Builds the dashboard venv at `~/.llmeter/app/.venv` and writes the
    launchd LaunchAgent `com.llmeter.monitor`.
-3. Builds a separate menu bar venv at `~/.llmeter/menubar-venv` (rumps +
-   py2app), kept separate so pyobjc/py2app don't bloat the dashboard env.
-4. Runs `python setup_menubar.py py2app -A` (alias mode — fast, references
-   the installed source) to produce `Llmeter.app`.
-5. Copies the bundle to `/Applications/Llmeter.app` (idempotent: removes
-   any prior bundle first).
-6. Writes a launchd LaunchAgent at
+3. Builds a separate menu bar venv at `~/.llmeter/menubar-venv`, kept
+   separate so pyobjc doesn't bloat the dashboard env.
+4. Removes any older `/Applications/Llmeter.app` test bundle/processes from
+   previous py2app experiments.
+5. Writes a launchd LaunchAgent at
    `~/Library/LaunchAgents/com.llmeter.menubar.plist` (Label
    `com.llmeter.menubar`, `RunAtLoad=true`, `KeepAlive=false`,
-   `ProgramArguments` = `/usr/bin/open -a /Applications/Llmeter.app`).
+   `ProgramArguments` = `~/.llmeter/menubar-venv/bin/python -m
+   llmeter.menubar`, `WorkingDirectory` = `~/.llmeter/app`).
    Idempotent: prior plist is `bootout`'d and rewritten on every install.
-   This avoids the macOS Automation permission prompt that the previous
-   `osascript`/Login Item path required.
-7. `launchctl bootstrap` + `kickstart` to launch the app now and on every
+   This avoids the macOS Automation permission prompt and the fragile py2app
+   launch-error path.
+6. `launchctl bootstrap` + `kickstart` to launch the menu bar now and on every
    login. Opens the dashboard at the end.
 
 Install flags:
@@ -166,7 +166,6 @@ python3 -m venv .venv-menubar
 . .venv-menubar/bin/activate
 pip install -r requirements.txt -r requirements-menubar.txt
 python -m llmeter.menubar          # run from source
-python setup_menubar.py py2app -A  # alias-mode .app
 ```
 
 ### Configuration

@@ -129,7 +129,7 @@ function install(options = {}) {
   log(`✓ found ${python}`);
 
   // Always make sure source is staged at APP_DIR; dashboard install relies on it,
-  // and the menu bar build references it in alias mode.
+  // and the menu bar LaunchAgent runs the installed module from this tree.
   if (installDashboard) {
     log(`✓ installing dashboard at ${APP_DIR}`);
     stopServiceQuiet();
@@ -160,7 +160,7 @@ function install(options = {}) {
   }
 
   if (installMenubar) {
-    log("✓ installing menu bar app (Llmeter.app)");
+    log("✓ installing menu bar");
     const env = {
       ...process.env,
       LLMETER_PYTHON: python,
@@ -236,12 +236,12 @@ function checkHttp(callback) {
 }
 
 function menubarInstalled() {
-  return fs.existsSync(APP_BUNDLE);
+  return fs.existsSync(MENUBAR_PLIST) || fs.existsSync(MENUBAR_VENV) || fs.existsSync(APP_BUNDLE);
 }
 
 function menubarRunning() {
   if (process.platform !== "darwin") return false;
-  const r = run("pgrep", ["-f", "/Applications/Llmeter.app"], { capture: true });
+  const r = run("pgrep", ["-f", "llmeter.menubar|/Applications/Llmeter.app"], { capture: true });
   return r.ok && r.stdout.trim().length > 0;
 }
 
@@ -315,9 +315,9 @@ function stop() {
   ensureMac();
   stopServiceQuiet();
   stopPortListenersQuiet();
-  if (menubarInstalled()) {
-    run("osascript", ["-e", 'tell application "Llmeter" to quit'], { capture: true });
-  }
+  run("osascript", ["-e", 'tell application "Llmeter" to quit'], { capture: true });
+  run("pkill", ["-x", "Llmeter"], { capture: true });
+  run("pkill", ["-f", "llmeter.menubar"], { capture: true });
   log("✓ stopped llmeter");
 }
 
@@ -332,6 +332,8 @@ function uninstall() {
       run("launchctl", ["bootout", `gui/${process.getuid()}`, MENUBAR_PLIST], { capture: true });
       fs.rmSync(MENUBAR_PLIST, { force: true });
     }
+    run("pkill", ["-x", "Llmeter"], { capture: true });
+    run("pkill", ["-f", "llmeter.menubar"], { capture: true });
     fs.rmSync(APP_BUNDLE, { recursive: true, force: true });
     fs.rmSync(MENUBAR_VENV, { recursive: true, force: true });
   }
@@ -352,7 +354,7 @@ Usage:
   npx llmeter uninstall    Remove dashboard, menu bar app, LaunchAgent, and ~/.llmeter
 
 Options:
-  --no-menubar            Install only the dashboard (skip Llmeter.app)
+  --no-menubar            Install only the dashboard (skip menu bar)
   --menubar-only          Install only the menu bar app (skip the dashboard service).
                           NOTE: ingest currently runs inside the dashboard service,
                           so the menu bar will show no new data without it.

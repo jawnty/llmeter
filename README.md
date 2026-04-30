@@ -101,15 +101,13 @@ app polls the database every 5 seconds (override with
 
 The installer:
 
-- creates a separate venv at `~/.llmeter/menubar-venv` (so pyobjc/py2app
-  don't bloat the dashboard env)
-- installs `requirements-menubar.txt` (rumps + py2app)
-- builds `Llmeter.app` via `py2app -A` (alias mode — fast, references the
-  installed source under `~/.llmeter/app`)
-- copies it to `/Applications/Llmeter.app`
+- creates a separate venv at `~/.llmeter/menubar-venv`
+- installs `requirements-menubar.txt` (rumps)
 - writes a launchd LaunchAgent at
-  `~/Library/LaunchAgents/com.llmeter.menubar.plist` so the app starts at
-  every login (no System Settings step, no permission prompt)
+  `~/Library/LaunchAgents/com.llmeter.menubar.plist` that runs
+  `python -m llmeter.menubar` from the installed app tree
+- removes any older `/Applications/Llmeter.app` test bundle so stale py2app
+  launch errors cannot survive an upgrade
 - launches it now via `launchctl kickstart`
 
 Install flags:
@@ -119,8 +117,8 @@ Install flags:
   currently owns ingest, so without it the menu bar will show stale data.
   Tradeoff documented in `SPEC.md`.
 
-`npx llmeter uninstall` removes the menu bar app, LaunchAgent plist,
-menubar venv, dashboard service, and `~/.llmeter` together.
+`npx llmeter uninstall` removes the menu bar LaunchAgent plist, menubar venv,
+any older test bundle, dashboard service, and `~/.llmeter` together.
 
 `npx llmeter status` reports both the dashboard service and the menu bar app.
 
@@ -135,15 +133,7 @@ python3 -m venv .venv-menubar
 . .venv-menubar/bin/activate
 pip install -r requirements.txt -r requirements-menubar.txt
 
-# run from source, no bundle:
 python -m llmeter.menubar
-
-# fast iteration as an .app:
-python setup_menubar.py py2app -A
-open dist/Llmeter.app
-
-# standalone bundle:
-python setup_menubar.py py2app
 ```
 
 See `SPEC.md` for the full design rationale.
