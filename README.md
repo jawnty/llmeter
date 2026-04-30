@@ -41,9 +41,9 @@ That is it. The installer:
 
 - copies llmeter into `~/.llmeter/app`
 - creates `~/.llmeter/app/.venv`
-- installs pinned Python dependencies from `requirements.txt`
-- writes a launchd service for the installed app path
-- starts llmeter now and on future logins
+- installs pinned Python dependencies from `requirements.txt` (and `requirements-menubar.txt` on macOS)
+- writes a launchd service for the dashboard and a LaunchAgent for the menu bar app
+- starts both now and on future logins
 - opens the dashboard
 
 Logs are written to:
@@ -58,8 +58,7 @@ The SQLite database is written to:
 ~/.llmeter/app/data/llmeter.db
 ```
 
-If you are trying the current GitHub version before the npm package is
-published, use:
+To install the bleeding-edge `main` branch instead of the latest npm release:
 
 ```bash
 npx github:jawnty/llmeter install
