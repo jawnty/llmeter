@@ -19,6 +19,8 @@ async function loadToday() {
   document.getElementById("day").textContent = d.day;
   document.getElementById("total-tokens").textContent = fmt(d.totals.total_tokens);
   document.getElementById("total-turns").textContent = `${fmt(d.totals.turns)} turns`;
+  document.getElementById("fresh-input").textContent = fmt(d.totals.input_tokens);
+  document.getElementById("cache-read").textContent = fmt(d.totals.cache_read_tokens);
   document.getElementById("total-cost").textContent = fmtCost(d.totals.cost_usd);
   document.getElementById("claude-tokens").textContent = fmt(d.totals.claude_tokens);
   document.getElementById("codex-tokens").textContent = fmt(d.totals.codex_tokens);
@@ -33,7 +35,7 @@ function drawChart(series) {
     const x = pad + i * barW + 2;
     const bh = (s.total_tokens / max) * (h - pad * 2);
     const y = h - pad - bh;
-    const title = `${s.label}:00 — ${s.total_tokens.toLocaleString()} tokens, ${s.turns} turns`;
+    const title = `${s.label}:00 — ${s.total_tokens.toLocaleString()} total tokens, ${s.turns} turns`;
     return `<rect class="bar" x="${x}" y="${y}" width="${barW - 4}" height="${bh}"><title>${title}</title></rect>
             <text x="${x + (barW-4)/2}" y="${h - pad + 12}" text-anchor="middle">${s.hour}</text>`;
   }).join("");
@@ -46,7 +48,7 @@ async function loadSessions() {
   const d = await r.json();
   const tbody = document.querySelector("#sessions tbody");
   if (!d.sessions.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="muted" style="text-align:center;padding:24px">No sessions yet today.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="muted" style="text-align:center;padding:24px">No sessions yet today.</td></tr>`;
     return;
   }
   tbody.innerHTML = d.sessions.map((s) => {
@@ -58,6 +60,8 @@ async function loadSessions() {
       <td>${s.project ? esc(s.project) : "<span class='muted'>—</span>"}</td>
       <td class="prompt" title="${esc(s.opening_prompt || "")}">${prompt}</td>
       <td class="num">${fmt(s.total_tokens)}</td>
+      <td class="num">${fmt(s.input_tokens)}</td>
+      <td class="num">${fmt(s.cache_read_tokens)}</td>
       <td class="num">${fmt(s.turns)}</td>
       <td class="num">${fmtCost(s.cost_usd)}</td>
       <td><span class="muted">${esc((s.models || "").split(",").filter(Boolean).join(", ") || "—")}</span></td>
@@ -83,6 +87,8 @@ async function showDetail(sid) {
       <span></span>
       <span class="num">in ${fmt(t.input_tokens)}</span>
       <span class="num">out ${fmt(t.output_tokens)}</span>
+      <span class="num">read ${fmt(t.cache_read_tokens)}</span>
+      <span class="num">make ${fmt(t.cache_create_tokens)}</span>
       <span class="num">${fmt(t.total_tokens)}</span>
     </div>`).join("");
   document.getElementById("detail-body").innerHTML = `
@@ -92,7 +98,7 @@ async function showDetail(sid) {
     <div class="detail-prompt">${esc(s.opening_prompt || "(no opening prompt captured)")}</div>
     <div class="turn-row" style="font-weight:600">
       <span class="h">Time</span><span class="h">Model</span><span></span>
-      <span class="h num">Input</span><span class="h num">Output</span><span class="h num">Total</span>
+      <span class="h num">Input</span><span class="h num">Output</span><span class="h num">Cache read</span><span class="h num">Cache make</span><span class="h num">Total</span>
     </div>
     ${turns}
   `;

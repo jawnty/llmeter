@@ -54,6 +54,11 @@ def api_today():
         totals = c.execute(
             """
             SELECT SUM(total_tokens) AS total, SUM(cost_usd) AS cost, COUNT(*) AS turns,
+                   SUM(input_tokens) AS input_tokens,
+                   SUM(output_tokens) AS output_tokens,
+                   SUM(cache_read_tokens) AS cache_read_tokens,
+                   SUM(cache_create_tokens) AS cache_create_tokens,
+                   SUM(reasoning_tokens) AS reasoning_tokens,
                    SUM(CASE WHEN source='claude' THEN total_tokens ELSE 0 END) AS claude_tokens,
                    SUM(CASE WHEN source='codex'  THEN total_tokens ELSE 0 END) AS codex_tokens
             FROM turns WHERE day_local = ?
@@ -82,6 +87,11 @@ def api_today():
             "total_tokens": totals["total"] or 0,
             "cost_usd":     totals["cost"] or 0,
             "turns":        totals["turns"] or 0,
+            "input_tokens": totals["input_tokens"] or 0,
+            "output_tokens": totals["output_tokens"] or 0,
+            "cache_read_tokens": totals["cache_read_tokens"] or 0,
+            "cache_create_tokens": totals["cache_create_tokens"] or 0,
+            "reasoning_tokens": totals["reasoning_tokens"] or 0,
             "claude_tokens": totals["claude_tokens"] or 0,
             "codex_tokens":  totals["codex_tokens"] or 0,
         },

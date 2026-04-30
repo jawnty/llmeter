@@ -68,9 +68,12 @@ published API rates. It is not a bill.
 FastAPI server at `http://127.0.0.1:4001`. Shows:
 
 - Today's total tokens, turns, reference cost.
+- Today's fresh input tokens vs cache-read tokens, so users can distinguish
+  new prompt/context load from reused cached context.
 - Claude Code vs Codex token split.
 - Hourly token bars in local time.
-- Session list + per-turn detail.
+- Session list with total, fresh input, cache-read, turns, cost, and models.
+- Per-turn detail with fresh input, output, cache-read, cache-create, and total.
 - Live updates over server-sent events.
 
 Launched by a launchd LaunchAgent installed by `npx llmeter install`.
@@ -88,6 +91,8 @@ The menu bar title is a compact token count for today, e.g. `⚡ 1.2M`.
 Clicking the icon opens a menu with:
 
 - `Today: 1,234,567 tokens` — disabled header
+- `Fresh input: 123,456` — disabled
+- `Cache read: 987,654` — disabled
 - `Claude: 800,123` — disabled
 - `Codex:  434,444` — disabled
 - `Est. cost: $4.12` — disabled

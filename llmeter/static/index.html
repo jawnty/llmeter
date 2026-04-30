@@ -17,6 +17,8 @@
 
 <section class="totals">
   <div class="card"><div class="label">Today's tokens</div><div class="value" id="total-tokens">—</div><div class="sub" id="total-turns"></div></div>
+  <div class="card"><div class="label">Fresh input</div><div class="value" id="fresh-input">—</div><div class="sub">new prompt/context</div></div>
+  <div class="card"><div class="label">Cache read</div><div class="value" id="cache-read">—</div><div class="sub">reused context</div></div>
   <div class="card"><div class="label">Reference API cost*</div><div class="value" id="total-cost">—</div><div class="sub">*you pay subscription, not this</div></div>
   <div class="card"><div class="label">Claude Code</div><div class="value" id="claude-tokens">—</div></div>
   <div class="card"><div class="label">Codex</div><div class="value" id="codex-tokens">—</div></div>
@@ -33,7 +35,7 @@
     <thead>
       <tr>
         <th>Start</th><th>Src</th><th>Project</th><th>Opening prompt</th>
-        <th class="num">Tokens</th><th class="num">Turns</th><th class="num">Cost*</th><th>Models</th>
+        <th class="num">Tokens</th><th class="num">Fresh</th><th class="num">Cache read</th><th class="num">Turns</th><th class="num">Cost*</th><th>Models</th>
       </tr>
     </thead>
     <tbody></tbody>

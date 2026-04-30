@@ -29,8 +29,8 @@ def _seed(monkeypatch, tmp_path, rows, sessions=None):
                 "model": r.get("model", "claude-sonnet-4-6"),
                 "input_tokens": r.get("input_tokens", 0),
                 "output_tokens": r.get("output_tokens", 0),
-                "cache_read_tokens": 0,
-                "cache_create_tokens": 0,
+                "cache_read_tokens": r.get("cache_read_tokens", 0),
+                "cache_create_tokens": r.get("cache_create_tokens", 0),
                 "reasoning_tokens": 0,
                 "total_tokens": r["total_tokens"],
                 "cost_usd": r.get("cost_usd", 0.0),
@@ -43,6 +43,9 @@ def test_snapshot_empty_db(tmp_path, monkeypatch):
     db.init()
     snap = queries.snapshot(day="2026-04-29")
     assert snap.total_tokens == 0
+    assert snap.input_tokens == 0
+    assert snap.cache_read_tokens == 0
+    assert snap.cache_create_tokens == 0
     assert snap.claude_tokens == 0
     assert snap.codex_tokens == 0
     assert snap.cost_usd == 0.0
@@ -54,11 +57,14 @@ def test_snapshot_empty_db(tmp_path, monkeypatch):
 def test_snapshot_totals_and_split(tmp_path, monkeypatch):
     rows = [
         {"session_id": "s-claude", "source": "claude", "ts": "2026-04-29T17:00:00Z",
-         "day": "2026-04-29", "total_tokens": 1000, "cost_usd": 0.10},
+         "day": "2026-04-29", "total_tokens": 1000, "input_tokens": 100,
+         "cache_read_tokens": 700, "cache_create_tokens": 150, "cost_usd": 0.10},
         {"session_id": "s-claude", "source": "claude", "ts": "2026-04-29T17:05:00Z",
-         "day": "2026-04-29", "total_tokens": 2000, "cost_usd": 0.20},
+         "day": "2026-04-29", "total_tokens": 2000, "input_tokens": 200,
+         "cache_read_tokens": 1500, "cache_create_tokens": 200, "cost_usd": 0.20},
         {"session_id": "s-codex", "source": "codex", "ts": "2026-04-29T18:00:00Z",
-         "day": "2026-04-29", "total_tokens": 500, "cost_usd": 0.05},
+         "day": "2026-04-29", "total_tokens": 500, "input_tokens": 50,
+         "cache_read_tokens": 400, "cache_create_tokens": 0, "cost_usd": 0.05},
         # different day, must be ignored:
         {"session_id": "s-claude", "source": "claude", "ts": "2026-04-28T10:00:00Z",
          "day": "2026-04-28", "total_tokens": 9999, "cost_usd": 9.99},
@@ -67,6 +73,9 @@ def test_snapshot_totals_and_split(tmp_path, monkeypatch):
 
     snap = queries.snapshot(day="2026-04-29")
     assert snap.total_tokens == 3500
+    assert snap.input_tokens == 350
+    assert snap.cache_read_tokens == 2600
+    assert snap.cache_create_tokens == 350
     assert snap.claude_tokens == 3000
     assert snap.codex_tokens == 500
     assert round(snap.cost_usd, 2) == 0.35

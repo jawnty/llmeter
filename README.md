@@ -68,11 +68,12 @@ npx github:jawnty/llmeter install
 
 The dashboard shows:
 
-- today's total tokens, turns, and reference API cost
+- today's total tokens, fresh input, cache-read tokens, turns, and reference API cost
 - Claude Code vs. Codex token split
 - hourly token bars in your local timezone
-- session list with project, opening prompt, models, turns, and tokens
-- per-turn details when you click a session
+- session list with project, opening prompt, models, turns, total tokens,
+  fresh input, and cache-read tokens
+- per-turn details with input, output, cache-read, cache-create, and total tokens
 - live updates through server-sent events
 
 The cost number is a reference estimate only. It uses approximate published API
@@ -88,7 +89,8 @@ in the macOS menu bar and the dashboard at `http://127.0.0.1:4001`.
 The menu bar app shows:
 
 - compact token count in the menu bar (e.g. `⚡ 1.2M`)
-- today's total tokens, Claude vs Codex split, reference cost
+- today's total tokens, fresh input, cache-read tokens, Claude vs Codex split,
+  reference cost
 - last session summary (project · turns · tokens)
 - "Open dashboard" → `http://127.0.0.1:4001`
 - "Refresh now", "Quit"
@@ -244,7 +246,8 @@ npm pack --dry-run
 llmeter stores:
 
 - `sessions`: source, project, working directory, opening prompt, models
-- `turns`: timestamp, token counts, local day/hour bucket, reference cost
+- `turns`: timestamp, token counts including fresh input and cache tokens,
+  local day/hour bucket, reference cost
 - `file_offsets`: last ingested byte offset for each JSONL file
 
 The database is local SQLite. No usage data is sent anywhere by llmeter.
@@ -254,6 +257,6 @@ The database is local SQLite. No usage data is sent anywhere by llmeter.
 - Gemini CLI ingestion
 - multi-day comparison views
 - project-level rollups
-- cache hit-rate dashboard
+- richer cache/fresh-input trend dashboard
 - model-tier suggestions
 - optional LiteLLM-backed ingestion for tools that need a proxy layer

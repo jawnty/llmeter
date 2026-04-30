@@ -23,7 +23,7 @@ header h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -0.01e
 .status.stale { background: #6e7681; }
 
 section { padding: 18px 28px; }
-.totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.totals { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
 .card {
   background: #161b22;
   border: 1px solid #21262d;
@@ -61,7 +61,15 @@ dialog#session-detail {
 dialog::backdrop { background: rgba(0,0,0,0.6); }
 dialog .close { float: right; background: none; border: 1px solid #30363d; color: #8b949e; padding: 4px 10px; border-radius: 6px; cursor: pointer; }
 .detail-prompt { background: #0e1116; padding: 12px; border-radius: 6px; margin: 12px 0; white-space: pre-wrap; font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; max-height: 200px; overflow: auto; }
-.turn-row { display: grid; grid-template-columns: 80px 160px 1fr 80px 80px 80px; gap: 8px; padding: 6px 0; border-bottom: 1px solid #21262d; font-variant-numeric: tabular-nums; font-size: 12px; }
+.turn-row { display: grid; grid-template-columns: 80px 150px 1fr 80px 80px 90px 90px 80px; gap: 8px; padding: 6px 0; border-bottom: 1px solid #21262d; font-variant-numeric: tabular-nums; font-size: 12px; }
 .turn-row .h { color: #8b949e; font-size: 10px; text-transform: uppercase; }
 
 .muted { color: #6e7681; }
+
+@media (max-width: 1100px) {
+  .totals { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .totals { grid-template-columns: 1fr; }
+}

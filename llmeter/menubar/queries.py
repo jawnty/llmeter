@@ -21,6 +21,9 @@ def today_local() -> str:
 class Snapshot:
     day: str
     total_tokens: int
+    input_tokens: int
+    cache_read_tokens: int
+    cache_create_tokens: int
     claude_tokens: int
     codex_tokens: int
     cost_usd: float
@@ -38,6 +41,9 @@ def snapshot(day: str | None = None) -> Snapshot:
         totals = c.execute(
             """
             SELECT COALESCE(SUM(total_tokens), 0) AS total,
+                   COALESCE(SUM(input_tokens), 0) AS input_tokens,
+                   COALESCE(SUM(cache_read_tokens), 0) AS cache_read_tokens,
+                   COALESCE(SUM(cache_create_tokens), 0) AS cache_create_tokens,
                    COALESCE(SUM(cost_usd), 0)     AS cost,
                    COUNT(*)                       AS turns,
                    COALESCE(SUM(CASE WHEN source='claude' THEN total_tokens ELSE 0 END), 0) AS claude_tokens,
@@ -68,6 +74,9 @@ def snapshot(day: str | None = None) -> Snapshot:
     return Snapshot(
         day=day,
         total_tokens=int(totals["total"] or 0),
+        input_tokens=int(totals["input_tokens"] or 0),
+        cache_read_tokens=int(totals["cache_read_tokens"] or 0),
+        cache_create_tokens=int(totals["cache_create_tokens"] or 0),
         claude_tokens=int(totals["claude_tokens"] or 0),
         codex_tokens=int(totals["codex_tokens"] or 0),
         cost_usd=float(totals["cost"] or 0.0),

@@ -28,6 +28,8 @@ class LlmeterApp(rumps.App):
     def __init__(self):
         super().__init__("llmeter", title="⚡ —", quit_button=None)
         self._mi_today = rumps.MenuItem("Today: —")
+        self._mi_fresh = rumps.MenuItem("Fresh input: —")
+        self._mi_cache = rumps.MenuItem("Cache read: —")
         self._mi_claude = rumps.MenuItem("Claude: —")
         self._mi_codex = rumps.MenuItem("Codex: —")
         self._mi_cost = rumps.MenuItem("Est. cost: —")
@@ -35,6 +37,8 @@ class LlmeterApp(rumps.App):
 
         self.menu = [
             self._mi_today,
+            self._mi_fresh,
+            self._mi_cache,
             self._mi_claude,
             self._mi_codex,
             self._mi_cost,
@@ -62,6 +66,8 @@ class LlmeterApp(rumps.App):
 
         self.title = snap.title()
         self._mi_today.title = f"Today: {queries.fmt_int(snap.total_tokens)} tokens"
+        self._mi_fresh.title = f"Fresh input: {queries.fmt_int(snap.input_tokens)}"
+        self._mi_cache.title = f"Cache read: {queries.fmt_int(snap.cache_read_tokens)}"
         self._mi_claude.title = f"Claude: {queries.fmt_int(snap.claude_tokens)}"
         self._mi_codex.title = f"Codex:  {queries.fmt_int(snap.codex_tokens)}"
         self._mi_cost.title = f"Est. cost: {queries.fmt_cost(snap.cost_usd)}"
