@@ -137,18 +137,6 @@ python -m llmeter.menubar
 
 See `SPEC.md` for the full design rationale.
 
-## Help Page
-
-The running app includes a short Help page linked from the top right of the
-dashboard:
-
-```text
-http://127.0.0.1:4001/docs
-```
-
-The Help page is intentionally shorter than this README so new users can get
-unstuck without leaving the app.
-
 ## Stop Or Restart
 
 Stop:
