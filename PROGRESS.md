@@ -158,3 +158,57 @@ Open follow-ups (unchanged from round 1):
 - Standalone ingest entrypoint so `--menubar-only` actually ingests.
 - Cost / token threshold notifications.
 - Optional folding of dashboard into `Llmeter.app` (one process).
+
+---
+
+## 2026-04-29 — Round 3: kill the macOS permission prompt
+
+Round 2's installer used `osascript` + System Events to register a Login
+Item. That requires the user to grant Automation permission to the calling
+terminal, which broke the "dead simple" promise. Swapped it for a plain
+launchd LaunchAgent — fully scriptable, zero user permission grants.
+
+Changes:
+
+- `scripts/install_menubar.sh` — drops both `osascript ... System Events`
+  calls. Writes `~/Library/LaunchAgents/com.llmeter.menubar.plist`
+  (`Label=com.llmeter.menubar`, `RunAtLoad=true`, `KeepAlive=false`,
+  `ProgramArguments=/usr/bin/open -a /Applications/Llmeter.app`,
+  stdout/stderr → `~/.llmeter/logs/menubar.log`). Idempotently
+  `launchctl bootout` any prior agent, then `bootstrap` + `kickstart`.
+- `scripts/uninstall_menubar.sh` — replaces the Login Item delete with
+  `launchctl bootout` + `rm -f` of the plist.
+- `bin/llmeter.js` — `start` now uses the new `startMenubar()` helper that
+  prefers `launchctl kickstart` of `com.llmeter.menubar`, falling back to
+  `launchctl bootstrap` + `kickstart`, then `open -a Llmeter` as a final
+  resort. `status` adds a `menu bar LaunchAgent: loaded / not loaded` line.
+  `uninstall` fallback (when scripts aren't present) now bootouts + removes
+  the plist instead of poking System Events. Help text mentions LaunchAgent.
+  Removed the unused `LOGIN_ITEM_NAME` constant.
+- README + SPEC.md updated to describe the LaunchAgent path; troubleshooting
+  paragraph about granting Automation permission removed because it no
+  longer applies.
+
+Tested end-to-end on this Mac:
+
+1. Backed up `~/.llmeter` → `~/.llmeter.bak.<ts>`.
+2. `node bin/llmeter.js install --no-open` → dashboard reinstalled,
+   `Llmeter.app` built and copied, LaunchAgent plist written, app launched.
+   `launchctl print gui/$UID/com.llmeter.menubar` shows it loaded. App
+   process visible via `pgrep`. **No automation permission prompt.**
+3. `node bin/llmeter.js status` → dashboard `running/loaded`, menu bar
+   `installed and running`, LaunchAgent `loaded`, dashboard HTTP 200.
+4. `node bin/llmeter.js uninstall` → app gone, plist gone,
+   `launchctl print` reports unknown service, `~/.llmeter/menubar-venv`
+   gone, `~/.llmeter/app` gone.
+5. Restored `~/.llmeter` from backup, re-bootstrapped the dashboard
+   launchd service. HTTP 200 again. Backup deleted.
+6. `pytest` — 11/11 green.
+
+Try it (unchanged):
+
+```
+npx github:jawnty/llmeter#menubar-app install
+```
+
+No permission prompts, no manual steps.

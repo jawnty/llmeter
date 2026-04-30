@@ -107,8 +107,10 @@ The installer:
 - builds `Llmeter.app` via `py2app -A` (alias mode — fast, references the
   installed source under `~/.llmeter/app`)
 - copies it to `/Applications/Llmeter.app`
-- registers it as a Login Item so it starts on every login
-- launches it now
+- writes a launchd LaunchAgent at
+  `~/Library/LaunchAgents/com.llmeter.menubar.plist` so the app starts at
+  every login (no System Settings step, no permission prompt)
+- launches it now via `launchctl kickstart`
 
 Install flags:
 
@@ -117,8 +119,8 @@ Install flags:
   currently owns ingest, so without it the menu bar will show stale data.
   Tradeoff documented in `SPEC.md`.
 
-`npx llmeter uninstall` removes the menu bar app, Login Item, menubar venv,
-dashboard service, and `~/.llmeter` together.
+`npx llmeter uninstall` removes the menu bar app, LaunchAgent plist,
+menubar venv, dashboard service, and `~/.llmeter` together.
 
 `npx llmeter status` reports both the dashboard service and the menu bar app.
 

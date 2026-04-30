@@ -133,9 +133,15 @@ The installer:
    the installed source) to produce `Llmeter.app`.
 5. Copies the bundle to `/Applications/Llmeter.app` (idempotent: removes
    any prior bundle first).
-6. Registers it as a Login Item via `osascript`/System Events
-   (idempotent: removes any prior entry with the same name first).
-7. Launches the app and opens the dashboard.
+6. Writes a launchd LaunchAgent at
+   `~/Library/LaunchAgents/com.llmeter.menubar.plist` (Label
+   `com.llmeter.menubar`, `RunAtLoad=true`, `KeepAlive=false`,
+   `ProgramArguments` = `/usr/bin/open -a /Applications/Llmeter.app`).
+   Idempotent: prior plist is `bootout`'d and rewritten on every install.
+   This avoids the macOS Automation permission prompt that the previous
+   `osascript`/Login Item path required.
+7. `launchctl bootstrap` + `kickstart` to launch the app now and on every
+   login. Opens the dashboard at the end.
 
 Install flags:
 
