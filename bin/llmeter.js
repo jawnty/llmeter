@@ -360,13 +360,23 @@ Options:
                           so the menu bar will show no new data without it.
                           See SPEC.md "Open Questions".
   --no-open               Install without opening the browser
+  --version, -v           Print the llmeter version
   --help                  Show this help
 `);
+}
+
+function version() {
+  const pkg = require(path.join(__dirname, "..", "package.json"));
+  log(pkg.version);
 }
 
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
   help();
+  process.exit(0);
+}
+if (args.includes("--version") || args.includes("-v")) {
+  version();
   process.exit(0);
 }
 
